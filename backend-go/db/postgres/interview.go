@@ -19,21 +19,23 @@ type InterviewRepo struct{ pool *pgxpool.Pool }
 // NewInterviewRepo constructs an InterviewRepo.
 func NewInterviewRepo(pool *pgxpool.Pool) *InterviewRepo { return &InterviewRepo{pool: pool} }
 
-// Schedule inserts a session in the "scheduled" state and returns its Detail.
-func (r *InterviewRepo) Schedule(ctx context.Context, orgID, jobID, candidateID string, scheduledAt time.Time) (string, error) {
+// Schedule inserts a session in the "scheduled" state with the given join token.
+func (r *InterviewRepo) Schedule(
+	ctx context.Context, orgID, jobID, candidateID, joinToken string, scheduledAt time.Time,
+) (string, error) {
 	var id string
 	q := `
-		INSERT INTO interview_sessions (org_id, job_id, candidate_id, state, scheduled_at)
-		VALUES ($1, $2, $3, 'scheduled', $4)
+		INSERT INTO interview_sessions (org_id, job_id, candidate_id, state, scheduled_at, join_token)
+		VALUES ($1, $2, $3, 'scheduled', $4, $5)
 		RETURNING id`
-	if err := r.pool.QueryRow(ctx, q, orgID, jobID, candidateID, scheduledAt).Scan(&id); err != nil {
+	if err := r.pool.QueryRow(ctx, q, orgID, jobID, candidateID, scheduledAt, joinToken).Scan(&id); err != nil {
 		return "", err
 	}
 	return id, nil
 }
 
 const detailSelect = `
-	SELECT s.id, s.state, ss.label, s.scheduled_at, s.created_at,
+	SELECT s.id, s.state, ss.label, s.scheduled_at, s.created_at, s.join_token,
 	       j.id, j.title,
 	       c.id, c.name, c.email
 	FROM interview_sessions s
@@ -41,20 +43,50 @@ const detailSelect = `
 	JOIN candidates     c  ON c.id  = s.candidate_id
 	JOIN session_states ss ON ss.name = s.state`
 
-func scanDetail(row pgx.Row) (*interview.Detail, error) {
-	var d interview.Detail
-	err := row.Scan(
-		&d.ID, &d.State, &d.StateLabel, &d.ScheduledAt, &d.CreatedAt,
+func scanDetailInto(row pgx.Row, d *interview.Detail) error {
+	return row.Scan(
+		&d.ID, &d.State, &d.StateLabel, &d.ScheduledAt, &d.CreatedAt, &d.JoinToken,
 		&d.Job.ID, &d.Job.Title,
 		&d.Candidate.ID, &d.Candidate.Name, &d.Candidate.Email,
 	)
-	if err != nil {
+}
+
+func scanDetail(row pgx.Row) (*interview.Detail, error) {
+	var d interview.Detail
+	if err := scanDetailInto(row, &d); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
 	return &d, nil
+}
+
+// JoinInfo is the candidate-facing view resolved from a join token.
+type JoinInfo struct {
+	JobTitle    string
+	ScheduledAt time.Time
+	State       string
+	IsTerminal  bool
+}
+
+// JoinByToken resolves a candidate join token, or ErrNotFound.
+func (r *InterviewRepo) JoinByToken(ctx context.Context, token string) (*JoinInfo, error) {
+	var ji JoinInfo
+	err := r.pool.QueryRow(ctx, `
+		SELECT j.title, s.scheduled_at, s.state, ss.is_terminal
+		FROM interview_sessions s
+		JOIN jobs j ON j.id = s.job_id
+		JOIN session_states ss ON ss.name = s.state
+		WHERE s.join_token = $1`, token).
+		Scan(&ji.JobTitle, &ji.ScheduledAt, &ji.State, &ji.IsTerminal)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &ji, nil
 }
 
 // Get returns one interview Detail in the org.
@@ -180,11 +212,7 @@ func (r *InterviewRepo) List(ctx context.Context, orgID string, f interview.Filt
 	var out []interview.Detail
 	for rows.Next() {
 		var d interview.Detail
-		if err := rows.Scan(
-			&d.ID, &d.State, &d.StateLabel, &d.ScheduledAt, &d.CreatedAt,
-			&d.Job.ID, &d.Job.Title,
-			&d.Candidate.ID, &d.Candidate.Name, &d.Candidate.Email,
-		); err != nil {
+		if err := scanDetailInto(rows, &d); err != nil {
 			return nil, err
 		}
 		out = append(out, d)

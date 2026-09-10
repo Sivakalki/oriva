@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"oriva/backend-go/db/postgres"
+	"oriva/backend-go/jointoken"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,7 +40,7 @@ func TestApplyTransition_CASAndAudit(t *testing.T) {
 	require.NoError(t, err)
 
 	repo := postgres.NewInterviewRepo(pool)
-	id, err := repo.Schedule(ctx, org, job.ID, cand.ID, time.Now().Add(24*time.Hour))
+	id, err := repo.Schedule(ctx, org, job.ID, cand.ID, jointoken.New(), time.Now().Add(24*time.Hour))
 	require.NoError(t, err)
 
 	cur, err := repo.CurrentState(ctx, org, id)

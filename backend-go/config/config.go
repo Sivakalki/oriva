@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net/url"
 	"os"
 	"time"
 
@@ -35,6 +36,13 @@ mcp:
   enabled: true
   path: "/mcp"
   auth_token: "dev-mcp-token"
+
+app:
+  base_url: "http://localhost:5173"
+
+notify:
+  transport: "log"
+  from: "interviews@oriva.dev"
 `)
 
 type Config struct {
@@ -42,15 +50,37 @@ type Config struct {
 	Listen      string   `koanf:"listen"`
 	IsProdMode  bool     `koanf:"is_prod_mode"`
 	Logger      Logger   `koanf:"logger"`
+	WebApp      WebApp   `koanf:"app"`
 	Postgres    Postgres `koanf:"postgres"`
 	Auth        Auth     `koanf:"auth"`
 	MCP         MCP      `koanf:"mcp"`
+	Notify      Notify   `koanf:"notify"`
+}
+
+// WebApp holds settings about the frontend the backend needs (e.g. to build
+// candidate-facing URLs).
+type WebApp struct {
+	BaseURL string `koanf:"base_url"`
 }
 
 type MCP struct {
 	Enabled   bool   `koanf:"enabled"`
 	Path      string `koanf:"path"`
 	AuthToken string `koanf:"auth_token"`
+}
+
+// Notify configures outbound email (candidate invites).
+type Notify struct {
+	Transport string `koanf:"transport"` // "log" | "smtp"
+	From      string `koanf:"from"`
+	SMTP      SMTP   `koanf:"smtp"`
+}
+
+type SMTP struct {
+	Host     string `koanf:"host"`
+	Port     int    `koanf:"port"`
+	Username string `koanf:"username"`
+	Password string `koanf:"password"`
 }
 
 type Logger struct {
@@ -132,6 +162,31 @@ func (c *Config) Validate() error {
 		} else if c.IsProdMode && len(c.MCP.AuthToken) < 16 {
 			ve.Add("mcp.auth_token", "must be at least 16 chars in prod mode")
 		}
+	}
+
+	if c.WebApp.BaseURL == "" {
+		c.WebApp.BaseURL = "http://localhost:5173"
+	} else if _, err := url.Parse(c.WebApp.BaseURL); err != nil {
+		ve.Add("app.base_url", "must be a valid URL")
+	}
+
+	if c.Notify.Transport == "" {
+		c.Notify.Transport = "log"
+	}
+	switch c.Notify.Transport {
+	case "log":
+	case "smtp":
+		if c.Notify.SMTP.Host == "" {
+			ve.Add("notify.smtp.host", "required when notify.transport is smtp")
+		}
+		if c.Notify.From == "" {
+			ve.Add("notify.from", "required when notify.transport is smtp")
+		}
+	default:
+		ve.Add("notify.transport", "must be log or smtp")
+	}
+	if c.Notify.From == "" {
+		c.Notify.From = "interviews@oriva.dev"
 	}
 
 	if host, err := os.Hostname(); err == nil {

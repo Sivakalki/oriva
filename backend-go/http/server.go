@@ -24,6 +24,7 @@ type Server struct {
 	candidates *handlers.Candidates
 	health     *handlers.Health
 	interviews *handlers.Interviews
+	join       *handlers.Join
 	jobs       *handlers.Jobs
 	jwt        *jwt.JWT
 	logger     *zap.Logger
@@ -38,6 +39,7 @@ type Handlers struct {
 	Candidates *handlers.Candidates
 	Health     *handlers.Health
 	Interviews *handlers.Interviews
+	Join       *handlers.Join
 	Jobs       *handlers.Jobs
 	MCP        http.Handler // already bearer-auth-wrapped; nil when mcp disabled
 	MCPPath    string
@@ -51,6 +53,7 @@ func NewServer(logger *zap.Logger, h Handlers, j *jwt.JWT) *Server {
 		candidates: h.Candidates,
 		health:     h.Health,
 		interviews: h.Interviews,
+		join:       h.Join,
 		jobs:       h.Jobs,
 		jwt:        j,
 		logger:     logger,
@@ -76,6 +79,7 @@ func (s *Server) router() chi.Router {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", s.health.Check)
 		r.Handle("/metrics", promhttp.Handler())
+		r.Get("/join/{token}", s.toHandlerFunc(s.join.Status)) // public — token is the credential
 
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/login", s.toHandlerFunc(s.auth.Login))

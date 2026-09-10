@@ -12,11 +12,13 @@ import (
 	apxhttp "oriva/backend-go/http"
 	"oriva/backend-go/http/handlers"
 	orivamcp "oriva/backend-go/mcp"
+	"oriva/backend-go/notify"
 	"oriva/backend-go/services/auth"
 	"oriva/backend-go/services/candidates"
 	"oriva/backend-go/services/health"
 	"oriva/backend-go/services/interviews"
 	"oriva/backend-go/services/jobs"
+	"oriva/backend-go/services/join"
 	"oriva/backend-go/services/sessions"
 	"oriva/backend-go/statemachine"
 	"oriva/backend-go/utils/buildinfo"
@@ -107,14 +109,22 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 
 	sessionsSvc := sessions.NewService(interviewRepo, machine)
 
+	notifier, err := notify.NewSender(cfg.Notify, logger)
+	if err != nil {
+		return nil, err
+	}
+	interviewsSvc := interviews.NewService(
+		interviewRepo, jobRepo, candRepo, notifier, cfg.WebApp.BaseURL, logger)
+	joinSvc := join.NewService(interviewRepo)
+
 	hs := apxhttp.Handlers{
 		Auth:       handlers.NewAuthHandler(auth.NewService(userRepo, jwtSvc)),
 		Candidates: handlers.NewCandidatesHandler(candidates.NewService(candRepo)),
 		Health:     handlers.NewHealthHandler(health.NewService(logger, pool)),
-		Interviews: handlers.NewInterviewsHandler(
-			interviews.NewService(interviewRepo, jobRepo, candRepo), sessionsSvc),
-		Jobs:     handlers.NewJobsHandler(jobs.NewService(jobRepo)),
-		Sessions: handlers.NewSessionsHandler(sessionsSvc),
+		Interviews: handlers.NewInterviewsHandler(interviewsSvc, sessionsSvc),
+		Join:       handlers.NewJoinHandler(joinSvc),
+		Jobs:       handlers.NewJobsHandler(jobs.NewService(jobRepo)),
+		Sessions:   handlers.NewSessionsHandler(sessionsSvc),
 	}
 
 	if cfg.MCP.Enabled {

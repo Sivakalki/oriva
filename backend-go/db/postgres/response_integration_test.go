@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"oriva/backend-go/db/postgres"
+	"oriva/backend-go/jointoken"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +25,7 @@ func TestResponseRepo_RecordAndOrgHelpers(t *testing.T) {
 	require.NoError(t, err)
 
 	iv := postgres.NewInterviewRepo(pool)
-	sid, err := iv.Schedule(ctx, org, job.ID, cand.ID, time.Now().Add(24*time.Hour))
+	sid, err := iv.Schedule(ctx, org, job.ID, cand.ID, jointoken.New(), time.Now().Add(24*time.Hour))
 	require.NoError(t, err)
 
 	// OrgOf

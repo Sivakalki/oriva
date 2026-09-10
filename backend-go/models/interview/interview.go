@@ -37,6 +37,9 @@ type Detail struct {
 	Job         JobRef    `json:"job"`
 	Candidate   CandRef   `json:"candidate"`
 	CreatedAt   time.Time `json:"created_at"`
+
+	JoinToken string `json:"join_token"`
+	JoinURL   string `json:"join_url,omitempty"`
 }
 
 // Filter is the optional set of list constraints. Empty fields are ignored.

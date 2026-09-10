@@ -21,3 +21,10 @@ mcp:
   enabled: true
   path: "/mcp"
   auth_token: "dev-mcp-token"
+
+app:
+  base_url: "http://localhost:5173"
+
+notify:
+  transport: "log"
+  from: "interviews@oriva.dev"

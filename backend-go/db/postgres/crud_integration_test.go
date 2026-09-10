@@ -9,6 +9,7 @@ import (
 
 	"oriva/backend-go/config"
 	"oriva/backend-go/db/postgres"
+	"oriva/backend-go/jointoken"
 	"oriva/backend-go/models/interview"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -93,7 +94,7 @@ func TestInterviewRepo_ScheduleGetList(t *testing.T) {
 
 	repo := postgres.NewInterviewRepo(pool)
 	at := time.Now().Add(48 * time.Hour).UTC().Truncate(time.Second)
-	id, err := repo.Schedule(ctx, org, j.ID, c.ID, at)
+	id, err := repo.Schedule(ctx, org, j.ID, c.ID, jointoken.New(), at)
 	require.NoError(t, err)
 
 	d, err := repo.Get(ctx, org, id)
