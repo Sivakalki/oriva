@@ -1,10 +1,28 @@
 # oriva/backend-go
 
-Go backend for the AI interview platform. **Slice 1** (foundations): config, Postgres +
-migrations, health/metrics, and JWT auth. See
-[`../docs/superpowers/specs/2026-09-10-backend-go-slice1-design.md`](../docs/superpowers/specs/2026-09-10-backend-go-slice1-design.md).
+Go backend for the AI interview platform.
 
-CRUD, the session state machine, and the MCP server are later slices.
+- **Slice 1** — config, Postgres + migrations, health/metrics, JWT auth
+  ([spec](../docs/superpowers/specs/2026-09-10-backend-go-slice1-design.md))
+- **Slice 2** — recruiter CRUD (jobs, candidates) + interview scheduling, org-scoped
+  ([spec](../docs/superpowers/specs/2026-09-10-backend-go-slice2-design.md))
+
+The session state machine and the MCP server are later slices.
+
+## Endpoints
+
+```
+GET   /api/v1/health
+GET   /api/v1/metrics
+POST  /api/v1/auth/login
+GET   /api/v1/auth/me                          (auth)
+
+# all scheduler-only, scoped to the caller's org
+POST  /api/v1/jobs            GET /api/v1/jobs            GET/PATCH /api/v1/jobs/{id}
+POST  /api/v1/candidates      GET /api/v1/candidates      GET/PATCH /api/v1/candidates/{id}
+POST  /api/v1/interviews      GET /api/v1/interviews      GET /api/v1/interviews/{id}
+      # GET /interviews supports ?state= ?job_id= ?candidate_id=
+```
 
 ## Quick start
 

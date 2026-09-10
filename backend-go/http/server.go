@@ -20,15 +20,35 @@ import (
 
 // Server holds the handler dependencies. Fields in alphabetical order.
 type Server struct {
-	auth   *handlers.Auth
-	health *handlers.Health
-	jwt    *jwt.JWT
-	logger *zap.Logger
+	auth       *handlers.Auth
+	candidates *handlers.Candidates
+	health     *handlers.Health
+	interviews *handlers.Interviews
+	jobs       *handlers.Jobs
+	jwt        *jwt.JWT
+	logger     *zap.Logger
+}
+
+// Handlers bundles the HTTP handlers passed to NewServer.
+type Handlers struct {
+	Auth       *handlers.Auth
+	Candidates *handlers.Candidates
+	Health     *handlers.Health
+	Interviews *handlers.Interviews
+	Jobs       *handlers.Jobs
 }
 
 // NewServer constructs the Server.
-func NewServer(logger *zap.Logger, health *handlers.Health, auth *handlers.Auth, j *jwt.JWT) *Server {
-	return &Server{auth: auth, health: health, jwt: j, logger: logger}
+func NewServer(logger *zap.Logger, h Handlers, j *jwt.JWT) *Server {
+	return &Server{
+		auth:       h.Auth,
+		candidates: h.Candidates,
+		health:     h.Health,
+		interviews: h.Interviews,
+		jobs:       h.Jobs,
+		jwt:        j,
+		logger:     logger,
+	}
 }
 
 func (s *Server) router() chi.Router {
@@ -46,6 +66,30 @@ func (s *Server) router() chi.Router {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/login", s.toHandlerFunc(s.auth.Login))
 			r.With(middlewares.RequireAuth(s.jwt)).Get("/me", s.toHandlerFunc(s.auth.Me))
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(middlewares.RequireAuth(s.jwt), middlewares.RequireRole(jwt.RoleScheduler))
+
+			r.Route("/jobs", func(r chi.Router) {
+				r.Post("/", s.toHandlerFunc(s.jobs.Create))
+				r.Get("/", s.toHandlerFunc(s.jobs.List))
+				r.Get("/{id}", s.toHandlerFunc(s.jobs.Get))
+				r.Patch("/{id}", s.toHandlerFunc(s.jobs.Update))
+			})
+
+			r.Route("/candidates", func(r chi.Router) {
+				r.Post("/", s.toHandlerFunc(s.candidates.Create))
+				r.Get("/", s.toHandlerFunc(s.candidates.List))
+				r.Get("/{id}", s.toHandlerFunc(s.candidates.Get))
+				r.Patch("/{id}", s.toHandlerFunc(s.candidates.Update))
+			})
+
+			r.Route("/interviews", func(r chi.Router) {
+				r.Post("/", s.toHandlerFunc(s.interviews.Schedule))
+				r.Get("/", s.toHandlerFunc(s.interviews.List))
+				r.Get("/{id}", s.toHandlerFunc(s.interviews.Get))
+			})
 		})
 	})
 

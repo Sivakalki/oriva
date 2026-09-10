@@ -12,7 +12,10 @@ import (
 	apxhttp "oriva/backend-go/http"
 	"oriva/backend-go/http/handlers"
 	"oriva/backend-go/services/auth"
+	"oriva/backend-go/services/candidates"
 	"oriva/backend-go/services/health"
+	"oriva/backend-go/services/interviews"
+	"oriva/backend-go/services/jobs"
 	"oriva/backend-go/utils/buildinfo"
 	"oriva/backend-go/utils/jwt"
 
@@ -83,12 +86,21 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 	}
 
 	jwtSvc := jwt.New(cfg.Auth.JWTSecret, cfg.Auth.AccessTTLDur)
+
 	userRepo := postgres.NewUserRepo(pool)
+	jobRepo := postgres.NewJobRepo(pool)
+	candRepo := postgres.NewCandidateRepo(pool)
+	interviewRepo := postgres.NewInterviewRepo(pool)
 
-	healthH := handlers.NewHealthHandler(health.NewService(logger, pool))
-	authH := handlers.NewAuthHandler(auth.NewService(userRepo, jwtSvc))
+	hs := apxhttp.Handlers{
+		Auth:       handlers.NewAuthHandler(auth.NewService(userRepo, jwtSvc)),
+		Candidates: handlers.NewCandidatesHandler(candidates.NewService(candRepo)),
+		Health:     handlers.NewHealthHandler(health.NewService(logger, pool)),
+		Interviews: handlers.NewInterviewsHandler(interviews.NewService(interviewRepo, jobRepo, candRepo)),
+		Jobs:       handlers.NewJobsHandler(jobs.NewService(jobRepo)),
+	}
 
-	return apxhttp.NewServer(logger, healthH, authH, jwtSvc), nil
+	return apxhttp.NewServer(logger, hs, jwtSvc), nil
 }
 
 func main() {

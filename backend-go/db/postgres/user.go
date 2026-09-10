@@ -11,9 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// ErrNotFound is returned when a lookup matches no row.
-var ErrNotFound = errors.New("not found")
-
 // UserRepo is the pgx-backed user store.
 type UserRepo struct {
 	pool *pgxpool.Pool
