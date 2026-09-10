@@ -78,10 +78,13 @@ committing to it.
    committed clips are 4 synthetic tone-sweeps. **TODO:** record 10–15 real
    candidate-answer clips (pauses, fillers, noise, accents, short/long) and
    replace them — no code change, just files + manifest rows. *(ai-service slice 4)*
-4. ⬜ **Run the STT bake-off first.** Blocked on step 3's real clips + installing
-   `pipecat-ai[whisper]`. The matrix runner (`python -m oriva_ai.bakeoff`) scores
-   latency (p50/p95) and word error rate per combo and writes a CSV/JSON report;
-   it just needs real providers and clips fed in.
+4. 🟡 **Run the STT bake-off first.** The matrix runner
+   (`python -m oriva_ai.bakeoff`) works and has been run with a **real TTS**
+   (Piper, local) — see `ai-service-python/src/oriva_ai/bakeoff/RESULTS.md`:
+   Piper first-audio ~100–145 ms, inside the §1 budget. STT is still `mock`
+   because the synthetic clips don't transcribe to anything — the real STT
+   comparison + meaningful WER is blocked on step 3's recorded clips + installing
+   `pipecat-ai[whisper]`.
 5. ⬜ **Run the LLM × TTS matrix against the winning STT.** Same runner. LLM
    config already points at a LiteLLM `base_url`; running the proxy is pending.
    Still need to filter LLM candidates to ones with solid tool-calling first.
