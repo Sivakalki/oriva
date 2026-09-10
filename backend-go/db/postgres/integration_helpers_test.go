@@ -16,6 +16,6 @@ import (
 func truncateData(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(),
-		`TRUNCATE interview_sessions, responses, scores, candidates, jobs, users, organizations RESTART IDENTITY CASCADE`)
+		`TRUNCATE session_state_events, interview_sessions, responses, scores, candidates, jobs, users, organizations RESTART IDENTITY CASCADE`)
 	require.NoError(t, err)
 }

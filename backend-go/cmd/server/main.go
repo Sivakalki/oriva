@@ -16,6 +16,8 @@ import (
 	"oriva/backend-go/services/health"
 	"oriva/backend-go/services/interviews"
 	"oriva/backend-go/services/jobs"
+	"oriva/backend-go/services/sessions"
+	"oriva/backend-go/statemachine"
 	"oriva/backend-go/utils/buildinfo"
 	"oriva/backend-go/utils/jwt"
 
@@ -85,6 +87,16 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 		}
 	}
 
+	states, transitions, err := postgres.LoadGraph(ctx, pool)
+	if err != nil {
+		return nil, err
+	}
+	machine, err := statemachine.New(states, transitions)
+	if err != nil {
+		return nil, err
+	}
+	logger.Info("state machine loaded", zap.Int("states", len(states)), zap.Int("transitions", len(transitions)))
+
 	jwtSvc := jwt.New(cfg.Auth.JWTSecret, cfg.Auth.AccessTTLDur)
 
 	userRepo := postgres.NewUserRepo(pool)
@@ -92,12 +104,16 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 	candRepo := postgres.NewCandidateRepo(pool)
 	interviewRepo := postgres.NewInterviewRepo(pool)
 
+	sessionsSvc := sessions.NewService(interviewRepo, machine)
+
 	hs := apxhttp.Handlers{
 		Auth:       handlers.NewAuthHandler(auth.NewService(userRepo, jwtSvc)),
 		Candidates: handlers.NewCandidatesHandler(candidates.NewService(candRepo)),
 		Health:     handlers.NewHealthHandler(health.NewService(logger, pool)),
-		Interviews: handlers.NewInterviewsHandler(interviews.NewService(interviewRepo, jobRepo, candRepo)),
-		Jobs:       handlers.NewJobsHandler(jobs.NewService(jobRepo)),
+		Interviews: handlers.NewInterviewsHandler(
+			interviews.NewService(interviewRepo, jobRepo, candRepo), sessionsSvc),
+		Jobs:     handlers.NewJobsHandler(jobs.NewService(jobRepo)),
+		Sessions: handlers.NewSessionsHandler(sessionsSvc),
 	}
 
 	return apxhttp.NewServer(logger, hs, jwtSvc), nil

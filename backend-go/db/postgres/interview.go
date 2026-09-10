@@ -63,6 +63,57 @@ func (r *InterviewRepo) Get(ctx context.Context, orgID, id string) (*interview.D
 	return scanDetail(r.pool.QueryRow(ctx, q, orgID, id))
 }
 
+// CurrentState returns the session's current state, or ErrNotFound.
+func (r *InterviewRepo) CurrentState(ctx context.Context, orgID, id string) (string, error) {
+	var state string
+	err := r.pool.QueryRow(ctx,
+		`SELECT state FROM interview_sessions WHERE org_id = $1 AND id = $2`, orgID, id).Scan(&state)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return state, err
+}
+
+// ApplyTransition moves the session from -> to and appends an audit event,
+// atomically. It returns ErrNotFound if the session does not exist in the org,
+// or ErrConflict if the row is no longer in state `from` (lost CAS race).
+func (r *InterviewRepo) ApplyTransition(ctx context.Context, orgID, id, from, to, reason, actor string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	tag, err := tx.Exec(ctx,
+		`UPDATE interview_sessions SET state = $4, updated_at = now()
+		 WHERE org_id = $1 AND id = $2 AND state = $3`,
+		orgID, id, from, to)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		var exists bool
+		if err := tx.QueryRow(ctx,
+			`SELECT EXISTS (SELECT 1 FROM interview_sessions WHERE org_id = $1 AND id = $2)`,
+			orgID, id).Scan(&exists); err != nil {
+			return err
+		}
+		if !exists {
+			return ErrNotFound
+		}
+		return ErrConflict
+	}
+
+	if _, err := tx.Exec(ctx,
+		`INSERT INTO session_state_events (session_id, org_id, from_state, to_state, reason, actor)
+		 VALUES ($1, $2, $3, $4, $5, $6)`,
+		id, orgID, from, to, reason, actor); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
 // List returns interview Details for the org, applying any set filters.
 func (r *InterviewRepo) List(ctx context.Context, orgID string, f interview.Filter) ([]interview.Detail, error) {
 	args := []any{orgID}

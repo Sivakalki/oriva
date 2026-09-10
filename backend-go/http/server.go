@@ -27,6 +27,7 @@ type Server struct {
 	jobs       *handlers.Jobs
 	jwt        *jwt.JWT
 	logger     *zap.Logger
+	sessions   *handlers.Sessions
 }
 
 // Handlers bundles the HTTP handlers passed to NewServer.
@@ -36,6 +37,7 @@ type Handlers struct {
 	Health     *handlers.Health
 	Interviews *handlers.Interviews
 	Jobs       *handlers.Jobs
+	Sessions   *handlers.Sessions
 }
 
 // NewServer constructs the Server.
@@ -48,6 +50,7 @@ func NewServer(logger *zap.Logger, h Handlers, j *jwt.JWT) *Server {
 		jobs:       h.Jobs,
 		jwt:        j,
 		logger:     logger,
+		sessions:   h.Sessions,
 	}
 }
 
@@ -89,7 +92,10 @@ func (s *Server) router() chi.Router {
 				r.Post("/", s.toHandlerFunc(s.interviews.Schedule))
 				r.Get("/", s.toHandlerFunc(s.interviews.List))
 				r.Get("/{id}", s.toHandlerFunc(s.interviews.Get))
+				r.Post("/{id}/advance", s.toHandlerFunc(s.interviews.Advance))
 			})
+
+			r.Get("/session-states", s.toHandlerFunc(s.sessions.Graph))
 		})
 	})
 

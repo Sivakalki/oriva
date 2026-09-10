@@ -8,6 +8,7 @@ import (
 	apxerrors "oriva/backend-go/errors"
 	"oriva/backend-go/models/interview"
 	"oriva/backend-go/services/interviews"
+	"oriva/backend-go/utils/authctx"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -18,11 +19,20 @@ type interviewsService interface {
 	List(ctx context.Context, orgID string, f interview.Filter) ([]interview.Detail, error)
 }
 
+type sessionsService interface {
+	Advance(ctx context.Context, orgID, sessionID, toState, reason, actor string) (*interview.Detail, error)
+}
+
 // Interviews is the interviews HTTP handler.
-type Interviews struct{ svc interviewsService }
+type Interviews struct {
+	svc      interviewsService
+	sessions sessionsService
+}
 
 // NewInterviewsHandler constructs an Interviews handler.
-func NewInterviewsHandler(svc interviewsService) *Interviews { return &Interviews{svc: svc} }
+func NewInterviewsHandler(svc interviewsService, sessions sessionsService) *Interviews {
+	return &Interviews{svc: svc, sessions: sessions}
+}
 
 type scheduleBody struct {
 	JobID       string `json:"job_id"`
@@ -66,6 +76,34 @@ func (h *Interviews) List(w http.ResponseWriter, r *http.Request) (any, int, err
 		return nil, 0, err
 	}
 	return listEnvelope(ds), http.StatusOK, nil
+}
+
+type advanceBody struct {
+	ToState string `json:"to_state"`
+	Reason  string `json:"reason"`
+}
+
+// Advance handles POST /interviews/{id}/advance.
+func (h *Interviews) Advance(w http.ResponseWriter, r *http.Request) (any, int, error) {
+	org, err := orgID(r)
+	if err != nil {
+		return nil, 0, err
+	}
+	var b advanceBody
+	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
+		return nil, 0, apxerrors.InvalidBodyErr(err)
+	}
+
+	actor := ""
+	if claims, ok := authctx.FromContext(r.Context()); ok {
+		actor = claims.Subject
+	}
+
+	d, err := h.sessions.Advance(r.Context(), org, chi.URLParam(r, "id"), b.ToState, b.Reason, actor)
+	if err != nil {
+		return nil, 0, err
+	}
+	return d, http.StatusOK, nil
 }
 
 // Get handles GET /interviews/{id}.

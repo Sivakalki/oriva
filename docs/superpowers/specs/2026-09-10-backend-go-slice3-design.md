@@ -225,7 +225,7 @@ Unit (`go test ./...`):
 
 Integration (`//go:build integration`, `-p 1`):
 - migrate up (0004 present); seed org/job/candidate; `Schedule`.
-- `LoadGraph` returns 12 states, 20 transitions (matches migration 0002).
+- `LoadGraph` returns 12 states, 21 transitions (matches migration 0002).
 - `ApplyTransition` `scheduled→invited` succeeds; a second `ApplyTransition`
   `scheduled→invited` on the same row → `ErrConflict` (state already moved).
 - `session_state_events` has one row with the right `from`/`to`/`actor`.

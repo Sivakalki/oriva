@@ -14,6 +14,7 @@ import (
 	"oriva/backend-go/services/candidates"
 	"oriva/backend-go/services/interviews"
 	"oriva/backend-go/services/jobs"
+	"oriva/backend-go/statemachine"
 	"oriva/backend-go/utils/authctx"
 	"oriva/backend-go/utils/jwt"
 
@@ -23,7 +24,9 @@ import (
 
 func authed(method, target, body string) *http.Request {
 	r := httptest.NewRequest(method, target, strings.NewReader(body))
-	return r.WithContext(authctx.WithClaims(r.Context(), &jwt.Claims{OrgID: "o1", Role: jwt.RoleScheduler}))
+	claims := &jwt.Claims{OrgID: "o1", Role: jwt.RoleScheduler}
+	claims.Subject = "u1"
+	return r.WithContext(authctx.WithClaims(r.Context(), claims))
 }
 
 func errKind(t *testing.T, err error) apxerrors.Kind {
@@ -117,8 +120,21 @@ func (f fakeInterviews) List(context.Context, string, interview.Filter) ([]inter
 	return nil, nil
 }
 
+type fakeSessions struct {
+	err error
+	got struct{ to, reason, actor string }
+}
+
+func (f *fakeSessions) Advance(_ context.Context, _, _, to, reason, actor string) (*interview.Detail, error) {
+	f.got.to, f.got.reason, f.got.actor = to, reason, actor
+	if f.err != nil {
+		return nil, f.err
+	}
+	return &interview.Detail{ID: "s1", State: to}, nil
+}
+
 func TestInterviewsSchedule(t *testing.T) {
-	h := NewInterviewsHandler(fakeInterviews{})
+	h := NewInterviewsHandler(fakeInterviews{}, &fakeSessions{})
 	body, status, err := h.Schedule(httptest.NewRecorder(),
 		authed(http.MethodPost, "/interviews", `{"job_id":"j1","candidate_id":"c1","scheduled_at":"2099-01-01T00:00:00Z"}`))
 	require.NoError(t, err)
@@ -127,8 +143,54 @@ func TestInterviewsSchedule(t *testing.T) {
 }
 
 func TestInterviewsSchedule_NotFound(t *testing.T) {
-	h := NewInterviewsHandler(fakeInterviews{err: apxerrors.E(apxerrors.NotFound, "job not found")})
+	h := NewInterviewsHandler(fakeInterviews{err: apxerrors.E(apxerrors.NotFound, "job not found")}, &fakeSessions{})
 	_, _, err := h.Schedule(httptest.NewRecorder(),
 		authed(http.MethodPost, "/interviews", `{"job_id":"x","candidate_id":"c1","scheduled_at":"2099-01-01T00:00:00Z"}`))
 	assert.Equal(t, apxerrors.NotFound, errKind(t, err))
+}
+
+func TestInterviewsAdvance(t *testing.T) {
+	fs := &fakeSessions{}
+	h := NewInterviewsHandler(fakeInterviews{}, fs)
+	body, status, err := h.Advance(httptest.NewRecorder(),
+		authed(http.MethodPost, "/interviews/s1/advance", `{"to_state":"invited","reason":"sent email"}`))
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, status)
+	assert.Equal(t, "invited", body.(*interview.Detail).State)
+	assert.Equal(t, "invited", fs.got.to)
+	assert.Equal(t, "sent email", fs.got.reason)
+	assert.Equal(t, "u1", fs.got.actor) // authed() sets Subject via claims... see helper
+}
+
+func TestInterviewsAdvance_Illegal(t *testing.T) {
+	h := NewInterviewsHandler(fakeInterviews{}, &fakeSessions{err: apxerrors.E(apxerrors.Conflict, "nope")})
+	_, _, err := h.Advance(httptest.NewRecorder(),
+		authed(http.MethodPost, "/interviews/s1/advance", `{"to_state":"scored"}`))
+	assert.Equal(t, apxerrors.Conflict, errKind(t, err))
+}
+
+func TestInterviewsAdvance_BadBody(t *testing.T) {
+	h := NewInterviewsHandler(fakeInterviews{}, &fakeSessions{})
+	_, _, err := h.Advance(httptest.NewRecorder(), authed(http.MethodPost, "/interviews/s1/advance", `{`))
+	assert.Equal(t, apxerrors.Invalid, errKind(t, err))
+}
+
+// --- session-states ---
+
+type fakeGraph struct{}
+
+func (fakeGraph) Graph() statemachine.Graph {
+	return statemachine.Graph{
+		States:      []statemachine.State{{Name: "scheduled", Label: "Scheduled"}},
+		Transitions: []statemachine.Transition{{From: "scheduled", To: "invited"}},
+	}
+}
+
+func TestSessionStatesGraph(t *testing.T) {
+	body, status, err := NewSessionsHandler(fakeGraph{}).Graph(
+		httptest.NewRecorder(), authed(http.MethodGet, "/session-states", ""))
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, status)
+	g := body.(statemachine.Graph)
+	assert.Equal(t, "scheduled", g.States[0].Name)
 }
