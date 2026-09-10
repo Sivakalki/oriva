@@ -10,16 +10,20 @@ Two services exist, built slice by slice; each slice has a design spec in
 `docs/superpowers/specs/` and a matching implementation commit.
 
 - **`backend-go/`** (module `oriva/backend-go`, Go 1.25, pgx + Postgres):
-  slices 1–4 done — config/logging/health/metrics, migrations, JWT auth,
-  recruiter CRUD + scheduling, the session state machine, and the MCP server.
+  slices 1–5 done — config/logging/health/metrics, migrations, JWT auth,
+  recruiter CRUD + scheduling, the session state machine, the MCP server, and
+  the candidate join token + invite email.
 - **`ai-service-python/`** (package `oriva_ai`, uv, Python 3.12, Pipecat 1.8):
   slices 1–4 done — scaffold/config/logging, the pluggable STT→LLM→TTS pipeline
   skeleton with a mock provider per stage, the MCP client, and the bake-off
   harness + Prometheus/Grafana compose.
+- **`frontend/`** (Vite + React 19 + Tailwind v4 + shadcn): slice 1 done —
+  recruiter shell (auth, dashboard, jobs, candidates, schedule, interview detail)
+  and the public candidate landing page.
 
 **What's left before Phase 1 can conclude:** install real STT/LLM/TTS providers
-and record the real clip set, then run the matrix and pick a combo. The
-frontend shell and all of Phase 2/3 are not started.
+and record the real clip set, then run the matrix and pick a combo. Phase 2/3
+are not started.
 
 ## Phase 0 — Foundations (can start immediately, doesn't depend on AI-stack bake-off)
 
@@ -32,8 +36,13 @@ frontend shell and all of Phase 2/3 are not started.
   loaded at startup into an immutable validator; transitions go through
   `POST /interviews/{id}/advance` with optimistic CAS + a `session_state_events`
   audit log; `GET /session-states` exposes the graph for React. *(backend-go slice 3)*
-- ⬜ **React frontend shell:** recruiter dashboard, scheduling flow, basic call
-  UI shell. Not started.
+- ✅ **React frontend shell** (`frontend/`, Vite + React + Tailwind v4 + shadcn):
+  recruiter auth, interviews dashboard, jobs/candidates lists + create, schedule
+  flow, interview detail with the state-advance control. Plus the **public
+  candidate landing page** (`/join/:token`) that shows a countdown before the
+  interview, "start" when open, and "you're N minutes late" after — backed by
+  `GET /api/v1/join/{token}` and the invite email sent on scheduling (backend
+  slice 5). Call UI is deferred. *(frontend slice 1, backend-go slice 5)*
 - 🟡 **Postgres schema:** organizations → jobs → candidates → interview_sessions
   → responses → scores, plus the state tables — all created (migrations
   0001–0004). Still draft; `responses`/`scores` will be refined as scoring lands.
