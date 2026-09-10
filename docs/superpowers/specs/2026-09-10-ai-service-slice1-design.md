@@ -108,7 +108,7 @@ class ServerConfig(BaseModel):
 
 class LoggingConfig(BaseModel):
     level: str = "DEBUG"
-    json: bool = False
+    format: Literal["console", "json"] = "console"   # "json" field name shadows BaseModel
 
 class AppConfig(BaseModel):
     name: str = "oriva-ai"
@@ -148,8 +148,8 @@ truth in dev and the Python defaults are just a safety net.
 
 `setup_logging(settings: LoggingConfig) -> None`:
 - remove loguru's default handler,
-- add a `stderr` sink: colorized human format when `json=False`, `serialize=True`
-  (JSON lines) when `json=True`, level from `settings.level`,
+- add a `stderr` sink: colorized human format when `format="console"`,
+  `serialize=True` (JSON lines) when `format="json"`, level from `settings.level`,
 - install an `InterceptHandler` on the root stdlib logger so `logging`-based
   output (uvicorn, pipecat sub-deps) is redirected into loguru,
 - set uvicorn/`uvicorn.access` loggers to propagate.
@@ -196,7 +196,7 @@ Buckets tuned to the `docs/ARCHITECTURE.md` §1 latency budget (e.g. TTFT
 - `test_config.py` — defaults load; a YAML file overrides a nested value; an
   `ORIVA_AI__LLM__MODEL` env var overrides the YAML; unknown key → `ValidationError`
   (`extra="forbid"`); `get_settings` is cached.
-- `test_logging.py` — `setup_logging` with `json=True` emits parseable JSON to the
+- `test_logging.py` — `setup_logging` with `format="json"` emits parseable JSON to the
   sink; stdlib `logging.getLogger("x").info(...)` reaches the loguru sink
   (capture via a list sink).
 - `test_app.py` — `/health` returns 200 with the expected keys; `/metrics` returns

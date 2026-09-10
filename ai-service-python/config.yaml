@@ -1,0 +1,49 @@
+# Single config for the Oriva AI service. Committed with dev defaults only —
+# no secrets. Override any value with env vars, e.g.
+#   ORIVA_AI__LLM__MODEL=anthropic/claude-sonnet-5
+#   ORIVA_AI__LOGGING__LEVEL=INFO
+# Nested keys use "__" as the delimiter.
+
+app:
+  name: oriva-ai
+  env: dev
+
+logging:
+  level: DEBUG
+  format: console   # console | json
+
+server:
+  host: 0.0.0.0
+  port: 8090
+
+# Local transport for the bake-off — no telephony yet (docs/PLAN.md Phase 1).
+transport:
+  type: websocket
+
+# STT / LLM / TTS are all pluggable and vendor-undecided (docs/ARCHITECTURE.md 3).
+stt:
+  provider: whisper
+  model: base.en
+  language: en
+
+llm:
+  provider: litellm
+  model: openai/gpt-4o-mini
+  base_url: http://localhost:4000
+  api_key: not-needed-for-local-litellm
+
+tts:
+  provider: piper
+  voice: en_US-lessac-medium
+
+# Python holds its own read-only connection for speculative pgvector retrieval
+# only. All writes go through the Go MCP boundary (docs/ARCHITECTURE.md 2).
+postgres:
+  dsn: postgresql://oriva:oriva@localhost:5432/oriva
+  readonly: true
+
+# Go implements the MCP server; this is where Pipecat's MCPClient connects.
+mcp:
+  server_url: http://localhost:8080/mcp
+
+metrics_enabled: true
