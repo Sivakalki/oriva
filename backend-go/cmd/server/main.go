@@ -11,6 +11,7 @@ import (
 	"oriva/backend-go/db/postgres"
 	apxhttp "oriva/backend-go/http"
 	"oriva/backend-go/http/handlers"
+	orivamcp "oriva/backend-go/mcp"
 	"oriva/backend-go/services/auth"
 	"oriva/backend-go/services/candidates"
 	"oriva/backend-go/services/health"
@@ -114,6 +115,18 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 			interviews.NewService(interviewRepo, jobRepo, candRepo), sessionsSvc),
 		Jobs:     handlers.NewJobsHandler(jobs.NewService(jobRepo)),
 		Sessions: handlers.NewSessionsHandler(sessionsSvc),
+	}
+
+	if cfg.MCP.Enabled {
+		mcpSrv := orivamcp.NewServer(orivamcp.Deps{
+			Interviews: interviewRepo,
+			Responses:  postgres.NewResponseRepo(pool),
+			Sessions:   sessionsSvc,
+			Logger:     logger,
+		})
+		hs.MCP = orivamcp.BearerAuth(cfg.MCP.AuthToken, mcpSrv.Handler())
+		hs.MCPPath = cfg.MCP.Path
+		logger.Info("mcp server enabled", zap.String("path", cfg.MCP.Path))
 	}
 
 	return apxhttp.NewServer(logger, hs, jwtSvc), nil

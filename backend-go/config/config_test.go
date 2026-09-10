@@ -26,6 +26,23 @@ func TestValidate_Happy(t *testing.T) {
 	assert.NotEmpty(t, c.Logger.HostName)
 }
 
+func TestValidate_MCP(t *testing.T) {
+	c := base()
+	c.MCP = MCP{Enabled: true, AuthToken: "dev-mcp-token"}
+	require.NoError(t, c.Validate())
+	assert.Equal(t, "/mcp", c.MCP.Path) // defaulted
+
+	c = base()
+	c.MCP = MCP{Enabled: false} // disabled + empty token is fine
+	assert.NoError(t, c.Validate())
+
+	c = base()
+	c.IsProdMode = true
+	c.Auth.JWTSecret = "0123456789012345678901234567890123"
+	c.MCP = MCP{Enabled: true, AuthToken: "short"}
+	assert.Error(t, c.Validate())
+}
+
 func TestValidate_Errors(t *testing.T) {
 	cases := map[string]func(*Config){
 		"empty listen":        func(c *Config) { c.Listen = "" },
@@ -35,6 +52,12 @@ func TestValidate_Errors(t *testing.T) {
 		"bad access_ttl":      func(c *Config) { c.Auth.AccessTTL = "10 flurbs" },
 		"empty jwt secret":    func(c *Config) { c.Auth.JWTSecret = "" },
 		"bcrypt cost too low": func(c *Config) { c.Auth.BcryptCost = 4; _ = c },
+		"mcp enabled no token": func(c *Config) {
+			c.MCP = MCP{Enabled: true, Path: "/mcp"}
+		},
+		"mcp bad path": func(c *Config) {
+			c.MCP = MCP{Enabled: true, Path: "mcp", AuthToken: "tok"}
+		},
 	}
 	for name, mut := range cases {
 		t.Run(name, func(t *testing.T) {

@@ -63,6 +63,45 @@ func (r *InterviewRepo) Get(ctx context.Context, orgID, id string) (*interview.D
 	return scanDetail(r.pool.QueryRow(ctx, q, orgID, id))
 }
 
+// OrgOf returns the organization that owns the session, or ErrNotFound.
+func (r *InterviewRepo) OrgOf(ctx context.Context, sessionID string) (string, error) {
+	var orgID string
+	err := r.pool.QueryRow(ctx,
+		`SELECT org_id FROM interview_sessions WHERE id = $1`, sessionID).Scan(&orgID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return orgID, err
+}
+
+// PlanData is the joined job/candidate/state view used by the get_interview_plan tool.
+type PlanData struct {
+	State           string
+	JobTitle        string
+	JobDescription  string
+	CandidateName   string
+	CandidateResume string
+}
+
+// PlanData returns the plan inputs for a session in the org, or ErrNotFound.
+func (r *InterviewRepo) PlanData(ctx context.Context, orgID, sessionID string) (*PlanData, error) {
+	var p PlanData
+	err := r.pool.QueryRow(ctx, `
+		SELECT s.state, j.title, j.description, c.name, c.resume_text
+		FROM interview_sessions s
+		JOIN jobs j ON j.id = s.job_id
+		JOIN candidates c ON c.id = s.candidate_id
+		WHERE s.org_id = $1 AND s.id = $2`, orgID, sessionID).
+		Scan(&p.State, &p.JobTitle, &p.JobDescription, &p.CandidateName, &p.CandidateResume)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
 // CurrentState returns the session's current state, or ErrNotFound.
 func (r *InterviewRepo) CurrentState(ctx context.Context, orgID, id string) (string, error) {
 	var state string

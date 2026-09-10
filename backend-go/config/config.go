@@ -30,6 +30,11 @@ auth:
   jwt_secret: "dev-insecure-secret-change-me"
   access_ttl: "1h"
   bcrypt_cost: 12
+
+mcp:
+  enabled: true
+  path: "/mcp"
+  auth_token: "dev-mcp-token"
 `)
 
 type Config struct {
@@ -39,6 +44,13 @@ type Config struct {
 	Logger      Logger   `koanf:"logger"`
 	Postgres    Postgres `koanf:"postgres"`
 	Auth        Auth     `koanf:"auth"`
+	MCP         MCP      `koanf:"mcp"`
+}
+
+type MCP struct {
+	Enabled   bool   `koanf:"enabled"`
+	Path      string `koanf:"path"`
+	AuthToken string `koanf:"auth_token"`
 }
 
 type Logger struct {
@@ -106,6 +118,20 @@ func (c *Config) Validate() error {
 	}
 	if c.Auth.BcryptCost < 10 || c.Auth.BcryptCost > 14 {
 		ve.Add("auth.bcrypt_cost", "must be between 10 and 14")
+	}
+
+	if c.MCP.Enabled {
+		if c.MCP.Path == "" {
+			c.MCP.Path = "/mcp"
+		}
+		if c.MCP.Path[0] != '/' {
+			ve.Add("mcp.path", "must start with /")
+		}
+		if c.MCP.AuthToken == "" {
+			ve.Add("mcp.auth_token", "cannot be empty when mcp.enabled")
+		} else if c.IsProdMode && len(c.MCP.AuthToken) < 16 {
+			ve.Add("mcp.auth_token", "must be at least 16 chars in prod mode")
+		}
 	}
 
 	if host, err := os.Hostname(); err == nil {

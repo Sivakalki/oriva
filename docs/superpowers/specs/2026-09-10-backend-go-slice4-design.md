@@ -24,7 +24,7 @@ Python side is built").
 
 | # | Decision | Rationale |
 |---|---|---|
-| D1 | `github.com/modelcontextprotocol/go-sdk` v1.8.0 | Official SDK; typed tools → generated JSON Schema; ships a Streamable HTTP handler |
+| D1 | `github.com/modelcontextprotocol/go-sdk` v1.7.0 (bumps the module to go 1.25) | Official SDK; typed tools → generated JSON Schema; ships a Streamable HTTP handler |
 | D2 | `/mcp` mounted at the **root**, not under `/api/v1` | It is not REST; Python's `mcp.server_url` is `http://…:8080/mcp`; different auth |
 | D3 | Static bearer token (`mcp.auth_token`), checked by `mcp/auth.go` | Python is a trusted internal service; per-org tokens / mTLS is a later hardening slice |
 | D4 | Each tool resolves `org_id` from `session_id` via `InterviewRepo.OrgOf` | The AI service operates on one session; the session carries the org — no JWT needed on this boundary |
@@ -34,7 +34,7 @@ Python side is built").
 
 ## 3. Dependency
 
-`go get github.com/modelcontextprotocol/go-sdk@v1.8.0`. Used APIs: `mcp.NewServer`,
+`go get github.com/modelcontextprotocol/go-sdk@v1.7.0`. Used APIs: `mcp.NewServer`,
 `mcp.AddTool[In, Out]`, `mcp.NewStreamableHTTPHandler`, `mcp.NewInMemoryTransports`
 + `mcp.NewClient` (tests).
 

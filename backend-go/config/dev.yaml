@@ -16,3 +16,8 @@ auth:
   jwt_secret: "dev-insecure-secret-change-me"
   access_ttl: "1h"
   bcrypt_cost: 12
+
+mcp:
+  enabled: true
+  path: "/mcp"
+  auth_token: "dev-mcp-token"

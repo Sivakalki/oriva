@@ -27,6 +27,8 @@ type Server struct {
 	jobs       *handlers.Jobs
 	jwt        *jwt.JWT
 	logger     *zap.Logger
+	mcp        http.Handler
+	mcpPath    string
 	sessions   *handlers.Sessions
 }
 
@@ -37,6 +39,8 @@ type Handlers struct {
 	Health     *handlers.Health
 	Interviews *handlers.Interviews
 	Jobs       *handlers.Jobs
+	MCP        http.Handler // already bearer-auth-wrapped; nil when mcp disabled
+	MCPPath    string
 	Sessions   *handlers.Sessions
 }
 
@@ -50,6 +54,8 @@ func NewServer(logger *zap.Logger, h Handlers, j *jwt.JWT) *Server {
 		jobs:       h.Jobs,
 		jwt:        j,
 		logger:     logger,
+		mcp:        h.MCP,
+		mcpPath:    h.MCPPath,
 		sessions:   h.Sessions,
 	}
 }
@@ -61,6 +67,11 @@ func (s *Server) router() chi.Router {
 	r.Use(middlewares.CORS())
 	r.Use(middlewares.LoggerWithMetrics(s.logger))
 	r.Use(middleware.Recoverer)
+
+	if s.mcp != nil && s.mcpPath != "" {
+		r.Handle(s.mcpPath, s.mcp)
+		r.Handle(s.mcpPath+"/*", s.mcp)
+	}
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", s.health.Check)

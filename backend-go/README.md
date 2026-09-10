@@ -22,6 +22,11 @@ POST  /api/v1/jobs            GET /api/v1/jobs            GET/PATCH /api/v1/jobs
 POST  /api/v1/candidates      GET /api/v1/candidates      GET/PATCH /api/v1/candidates/{id}
 POST  /api/v1/interviews      GET /api/v1/interviews      GET /api/v1/interviews/{id}
       # GET /interviews supports ?state= ?job_id= ?candidate_id=
+POST  /api/v1/interviews/{id}/advance   {to_state, reason?}   # session state transition
+GET   /api/v1/session-states                                  # the state graph
+
+# MCP tool boundary (Streamable HTTP, static bearer token, root path)
+POST  /mcp    # oriva.tools.v1: get_interview_plan, retrieve_context, record_turn, advance_state
 ```
 
 ## Quick start
