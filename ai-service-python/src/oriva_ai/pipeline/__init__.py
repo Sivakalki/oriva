@@ -1,5 +1,6 @@
-"""Voice pipeline (STT -> LLM -> TTS).
+"""Voice pipeline (STT -> LLM -> TTS)."""
 
-Empty in slice 1. Slice 2 adds the Pipecat pipeline skeleton with config-driven
-swappable STT/LLM/TTS services and a local WebSocket transport.
-"""
+from oriva_ai.pipeline.assembly import PipelineBuild, build_pipeline
+from oriva_ai.pipeline.runner import PipelineSession
+
+__all__ = ["build_pipeline", "PipelineBuild", "PipelineSession"]

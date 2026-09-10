@@ -12,8 +12,9 @@ from oriva_ai.config import Settings, get_settings, load_settings
 def test_defaults() -> None:
     s = Settings()
     assert s.app.name == "oriva-ai"
-    assert s.stt.provider == "whisper"
+    assert s.stt.provider == "mock"
     assert s.llm.base_url == "http://localhost:4000"
+    assert s.pipeline.sample_rate == 16000
     assert s.postgres.readonly is True
 
 
@@ -32,7 +33,7 @@ def test_yaml_overrides_nested_value(tmp_path: Path) -> None:
     s = load_settings(cfg)
     assert s.llm.model == "anthropic/claude-sonnet-5"
     assert s.server.port == 9999
-    assert s.stt.provider == "whisper"  # untouched
+    assert s.stt.provider == "mock"  # untouched
 
 
 def test_env_overrides_yaml(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

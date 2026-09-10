@@ -1,5 +1,4 @@
-"""FastAPI app: health + metrics. Transport signaling and the pipeline runner
-attach here in later slices."""
+"""FastAPI app: health, metrics, and the /ws pipeline endpoint."""
 
 from __future__ import annotations
 
@@ -13,23 +12,25 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 import oriva_ai.telemetry  # noqa: F401  (registers the Prometheus metric objects)
 from oriva_ai import __version__
 from oriva_ai.config import Settings
+from oriva_ai.pipeline import build_pipeline
+from oriva_ai.transport import register_ws_route
 
 
 def create_app(settings: Settings) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        app.state.pipeline = build_pipeline(settings)  # raises on bad provider config
         logger.info(
-            "ai service starting | env={} transport={} stt={}/{} llm={}/{} tts={}/{}",
+            "pipeline ready | env={} stt={}/{} llm={}/{} tts={}/{} vad={}",
             settings.app.env,
-            settings.transport.type,
             settings.stt.provider,
             settings.stt.model,
             settings.llm.provider,
             settings.llm.model,
             settings.tts.provider,
             settings.tts.voice,
+            settings.pipeline.vad,
         )
-        # TODO(slice 2): start the Pipecat pipeline runner here.
         yield
         logger.info("ai service stopping")
 
@@ -46,4 +47,5 @@ def create_app(settings: Settings) -> FastAPI:
             return Response(status_code=404)
         return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
+    register_ws_route(app)
     return app

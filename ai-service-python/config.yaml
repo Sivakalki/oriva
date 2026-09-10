@@ -21,20 +21,29 @@ transport:
   type: websocket
 
 # STT / LLM / TTS are all pluggable and vendor-undecided (docs/ARCHITECTURE.md 3).
+# The dev default is "mock" so the pipeline runs with no external services or
+# API keys. The bake-off flips these to whisper / litellm / piper etc.
 stt:
-  provider: whisper
+  provider: mock
   model: base.en
   language: en
+  mock_transcript: "I have about five years of backend experience."
 
 llm:
-  provider: litellm
+  provider: mock
   model: openai/gpt-4o-mini
   base_url: http://localhost:4000
   api_key: not-needed-for-local-litellm
+  mock_reply_template: "You said: {user} Can you tell me more about that?"
 
 tts:
-  provider: piper
+  provider: mock
   voice: en_US-lessac-medium
+
+pipeline:
+  greeting: "Hi, thanks for joining. Let's begin when you're ready."
+  sample_rate: 16000
+  vad: silero   # silero | none
 
 # Python holds its own read-only connection for speculative pgvector retrieval
 # only. All writes go through the Go MCP boundary (docs/ARCHITECTURE.md 2).

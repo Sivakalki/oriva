@@ -652,7 +652,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "loguru", specifier = ">=0.7" },
-    { name = "pipecat-ai", specifier = ">=0.0.60" },
+    { name = "pipecat-ai", extras = ["silero"], specifier = ">=1.8" },
     { name = "prometheus-client", specifier = ">=0.20" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pydantic-settings", specifier = ">=2.3" },

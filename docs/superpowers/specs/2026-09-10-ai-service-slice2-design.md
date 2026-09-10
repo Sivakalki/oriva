@@ -264,6 +264,24 @@ against 1.8.1 at build time.
 All tests use mock providers; no network, no models. `make check` stays green
 (ruff + mypy --strict + pytest).
 
+## 11a. Deviations found during build (Pipecat 1.8.1)
+
+- **Metrics source (D3 revised):** Pipecat 1.8's `MetricsFrame.data` came through
+  empty for our services, so `MetricsObserver` times the stage boundaries itself
+  from the frames that cross them (`UserStoppedSpeakingFrame` → `TranscriptionFrame`
+  → first `LLMTextFrame` → first `TTSAudioRawFrame` → `BotStartedSpeakingFrame`),
+  using the pipeline clock. This is what PLAN.md step 2 literally asks for
+  ("timestamp each handoff") and needs no transport.
+- **VAD:** `FastAPIWebsocketParams` has no `vad_analyzer` in 1.8; the Silero
+  analyzer is passed to `LLMContextAggregatorPair(user_params=...)` in
+  `assembly.make_task` instead.
+- **Offline execution:** the universal user context aggregator's turn-completion
+  heuristics deadlock without a real VAD/transport, so `pipeline/offline.py` uses
+  a `TranscriptToContextBridge` (transcript → user message → one `LLMContextFrame`)
+  for the harness and tests. The live `/ws` path keeps the real aggregator.
+- **Mock services** carry small synthetic delays (STT 30 ms, LLM TTFT 80 ms, TTS
+  TTFA 40 ms) so the harness produces non-zero numbers.
+
 ## 12. Out of scope (later slices)
 
 - MCP client (`pipecat.services.mcp_service`) → Go's MCP server.

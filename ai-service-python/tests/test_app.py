@@ -39,3 +39,15 @@ def test_settings_attached_to_app_state(settings: Settings) -> None:
     assert app.state.settings is settings
     # sanity: Settings is a normal pydantic model, not a dataclass
     assert not dataclasses.is_dataclass(settings)
+
+
+def test_ws_route_registered(settings: Settings) -> None:
+    app = create_app(settings)
+    paths = {getattr(r, "path", None) for r in app.routes}
+    assert "/ws" in paths
+
+
+def test_lifespan_builds_pipeline(settings: Settings) -> None:
+    with TestClient(create_app(settings)) as client:
+        client.get("/health")
+        assert client.app.state.pipeline is not None  # type: ignore[attr-defined]

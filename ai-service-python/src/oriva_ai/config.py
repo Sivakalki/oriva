@@ -48,21 +48,29 @@ class TransportConfig(BaseModel):
 
 
 class STTConfig(BaseModel):
-    provider: str = "whisper"
+    provider: str = "mock"
     model: str = "base.en"
     language: str = "en"
+    mock_transcript: str = "I have about five years of backend experience."
 
 
 class LLMConfig(BaseModel):
-    provider: str = "litellm"
+    provider: str = "mock"
     model: str = "openai/gpt-4o-mini"
     base_url: str = "http://localhost:4000"
     api_key: str = "not-needed-for-local-litellm"
+    mock_reply_template: str = "You said: {user} Can you tell me more about that?"
 
 
 class TTSConfig(BaseModel):
-    provider: str = "piper"
+    provider: str = "mock"
     voice: str = "en_US-lessac-medium"
+
+
+class PipelineConfig(BaseModel):
+    greeting: str = "Hi, thanks for joining. Let's begin when you're ready."
+    sample_rate: int = 16000
+    vad: Literal["silero", "none"] = "silero"
 
 
 class PostgresConfig(BaseModel):
@@ -88,6 +96,7 @@ class Settings(BaseSettings):
     stt: STTConfig = Field(default_factory=STTConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     tts: TTSConfig = Field(default_factory=TTSConfig)
+    pipeline: PipelineConfig = Field(default_factory=PipelineConfig)
     postgres: PostgresConfig = Field(default_factory=PostgresConfig)
     mcp: MCPConfig = Field(default_factory=MCPConfig)
     metrics_enabled: bool = True
