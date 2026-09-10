@@ -21,9 +21,7 @@ _SYSTEM_PROMPT = (
 )
 
 
-def interview_context(
-    settings: Settings, tools: ToolsSchema | None = None
-) -> LLMContext:
+def interview_context(settings: Settings, tools: ToolsSchema | None = None) -> LLMContext:
     messages: list[Any] = [
         {"role": "system", "content": _SYSTEM_PROMPT},
         {"role": "assistant", "content": settings.pipeline.greeting},

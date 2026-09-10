@@ -1,0 +1,27 @@
+clips:
+- id: clean_short
+  file: clean_short.wav
+  reference_transcript: I have about five years of backend experience.
+  tags:
+  - clean
+  - short
+- id: filler_medium
+  file: filler_medium.wav
+  reference_transcript: Um so I mostly worked on like payment systems and uh some
+    infra tooling.
+  tags:
+  - fillers
+  - medium
+- id: accent_long
+  file: accent_long.wav
+  reference_transcript: In my previous role I led the migration of a monolith to services
+    and owned the observability stack across three teams.
+  tags:
+  - accent
+  - long
+- id: noisy_short
+  file: noisy_short.wav
+  reference_transcript: I prefer Go for services and Python for the data pipelines.
+  tags:
+  - noise
+  - short

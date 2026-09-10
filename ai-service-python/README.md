@@ -13,6 +13,9 @@ Pipecat **STT → LLM → TTS** pipeline (`docs/ARCHITECTURE.md` §1).
 - **Slice 3** — MCP client: connects to the backend-go MCP server, loads
   `oriva.tools.v1` into the LLM context per `/ws` connection.
   [spec](../docs/superpowers/specs/2026-09-10-ai-service-slice3-design.md)
+- **Slice 4** — bake-off harness: fixed clip set + combo-matrix runner scoring
+  stage latency and WER; Prometheus/Grafana compose.
+  [spec](../docs/superpowers/specs/2026-09-10-ai-service-slice4-design.md)
 
 ## Pipeline
 
@@ -38,6 +41,20 @@ tool call via `tools_arguments` — the LLM never sees it.
 # live cross-service test (needs backend-go running)
 ORIVA_GO_MCP_URL=http://localhost:8080/mcp make test-integration
 ```
+
+## Bake-off
+
+Score STT/LLM/TTS combinations (`bakeoff/combos.yaml`) over the fixed clip set
+(`bakeoff/clips/`) on stage latency and word error rate (`docs/PLAN.md` Phase 1).
+
+```bash
+make bakeoff                              # writes bakeoff/out/{results.csv,results.json}
+make obs-up                               # Prometheus :9090, Grafana :3000, Pushgateway :9091
+uv run python -m oriva_ai.bakeoff --push  # push aggregates to Grafana
+```
+
+The committed clips are synthetic; see `bakeoff/clips/README.md` to drop in real
+recordings. Real provider combos need `uv add "pipecat-ai[whisper,openai,piper]"`.
 
 ## Quick start
 

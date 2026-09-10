@@ -33,6 +33,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/oriva_ai"]
+artifacts = ["src/oriva_ai/**/*.yaml", "src/oriva_ai/**/*.wav"]
 
 [tool.ruff]
 line-length = 100

@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  # The running ai-service (/ws pipeline metrics), on the docker host.
+  - job_name: oriva-ai
+    static_configs:
+      - targets: ["host.docker.internal:8090"]
+
+  # Bake-off runs pushed via `python -m oriva_ai.bakeoff --push`.
+  - job_name: pushgateway
+    honor_labels: true
+    static_configs:
+      - targets: ["pushgateway:9091"]

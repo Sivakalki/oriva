@@ -1,0 +1,23 @@
+# Provider combinations to compare. Each is a full STT/LLM/TTS triple; fields
+# not set fall back to the config.yaml defaults. Run with:
+#   uv run python -m oriva_ai.bakeoff
+#
+# A combo whose provider needs an uninstalled extra is reported as "unavailable"
+# and skipped — the rest of the matrix still runs.
+
+combos:
+  - name: all-mock
+    stt: { provider: mock, model: base.en }
+    llm: { provider: mock, model: mock }
+    tts: { provider: mock, voice: mock }
+
+  # --- real examples (need: uv add "pipecat-ai[whisper,openai,piper]" + models) ---
+  # - name: whisper-litellm-piper
+  #   stt: { provider: whisper, model: base.en }
+  #   llm: { provider: litellm, model: openai/gpt-4o-mini, base_url: http://localhost:4000 }
+  #   tts: { provider: piper,   voice: en_US-lessac-medium }
+  #
+  # - name: whisper-small-litellm-piper
+  #   stt: { provider: whisper, model: small.en }
+  #   llm: { provider: litellm, model: openai/gpt-4o-mini, base_url: http://localhost:4000 }
+  #   tts: { provider: piper,   voice: en_US-lessac-medium }

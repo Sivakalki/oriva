@@ -1,4 +1,5 @@
-.PHONY: sync lock run dev test test-integration lint fmt typecheck check
+.PHONY: sync lock run dev test test-integration lint fmt typecheck check \
+        bakeoff gen-clips obs-up obs-down
 
 sync:
 	uv sync
@@ -30,3 +31,15 @@ typecheck:
 	uv run mypy src
 
 check: lint typecheck test
+
+bakeoff:
+	uv run python -m oriva_ai.bakeoff
+
+gen-clips:
+	uv run python tools/gen_bakeoff_clips.py
+
+obs-up:
+	docker compose up -d
+
+obs-down:
+	docker compose down
