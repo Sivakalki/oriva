@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS scores;
+DROP TABLE IF EXISTS responses;
+DROP TABLE IF EXISTS interview_sessions;
+DROP TABLE IF EXISTS session_state_transitions;
+DROP TABLE IF EXISTS session_states;
+DROP TABLE IF EXISTS candidates;
+DROP TABLE IF EXISTS jobs;
+DROP TABLE IF EXISTS organizations;
+
+DROP EXTENSION IF EXISTS citext;
+DROP EXTENSION IF EXISTS vector;

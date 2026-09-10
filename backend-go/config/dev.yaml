@@ -1,0 +1,18 @@
+application: "oriva-backend"
+listen: ":8080"
+is_prod_mode: false
+
+logger:
+  level: "debug"
+
+postgres:
+  dsn: "postgres://oriva:oriva@localhost:5432/oriva?sslmode=disable"
+  max_conns: 10
+  min_conns: 2
+  max_conn_lifetime: "1h"
+  auto_migrate: true
+
+auth:
+  jwt_secret: "dev-insecure-secret-change-me"
+  access_ttl: "1h"
+  bcrypt_cost: 12
