@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import dataclasses
 
+import pytest
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from oriva_ai.app import create_app
 from oriva_ai.config import Settings
@@ -51,3 +53,12 @@ def test_lifespan_builds_pipeline(settings: Settings) -> None:
     with TestClient(create_app(settings)) as client:
         client.get("/health")
         assert client.app.state.pipeline is not None  # type: ignore[attr-defined]
+
+
+def test_ws_requires_session_id_when_mcp_enabled(settings: Settings) -> None:
+    assert settings.mcp.enabled
+    with TestClient(create_app(settings)) as client:
+        with pytest.raises(WebSocketDisconnect) as exc:
+            with client.websocket_connect("/ws"):
+                pass
+    assert exc.value.code == 1008

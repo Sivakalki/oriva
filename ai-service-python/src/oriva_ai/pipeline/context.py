@@ -6,6 +6,9 @@ phase (docs/PLAN.md Phase 2).
 
 from __future__ import annotations
 
+from typing import Any
+
+from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.processors.aggregators.llm_context import LLMContext
 
 from oriva_ai.config import Settings
@@ -18,10 +21,13 @@ _SYSTEM_PROMPT = (
 )
 
 
-def interview_context(settings: Settings) -> LLMContext:
-    return LLMContext(
-        messages=[
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "assistant", "content": settings.pipeline.greeting},
-        ]
-    )
+def interview_context(
+    settings: Settings, tools: ToolsSchema | None = None
+) -> LLMContext:
+    messages: list[Any] = [
+        {"role": "system", "content": _SYSTEM_PROMPT},
+        {"role": "assistant", "content": settings.pipeline.greeting},
+    ]
+    if tools is not None:
+        return LLMContext(messages=messages, tools=tools)
+    return LLMContext(messages=messages)

@@ -12,12 +12,14 @@ from pipecat.processors.aggregators.llm_response_universal import (
     LLMUserAggregatorParams,
 )
 from pipecat.services.llm_service import LLMService
+from pipecat.services.mcp_service import MCPClient
 from pipecat.services.stt_service import STTService
 from pipecat.services.tts_service import TTSService
 from pipecat.transports.base_transport import BaseTransport
 
 from oriva_ai.config import Settings
 from oriva_ai.pipeline.context import interview_context
+from oriva_ai.pipeline.mcp_tools import build_mcp_client, load_tools
 from oriva_ai.pipeline.providers import build_llm, build_stt, build_tts
 from oriva_ai.telemetry.observer import MetricsObserver
 
@@ -31,6 +33,7 @@ class PipelineBuild:
     llm: LLMService
     tts: TTSService
     context: LLMContext
+    mcp_client: MCPClient | None = None
 
     def make_task(self, transport: BaseTransport) -> PipelineTask:
         user_params = LLMUserAggregatorParams()
@@ -68,7 +71,10 @@ class PipelineBuild:
 
 
 def build_pipeline(settings: Settings) -> PipelineBuild:
-    """Construct the services once. Raises on bad provider config (fail fast)."""
+    """Construct the services once. Raises on bad provider config (fail fast).
+
+    No MCP — used by app startup (validation) and the offline harness.
+    """
     return PipelineBuild(
         settings=settings,
         stt=build_stt(settings.stt),
@@ -76,3 +82,16 @@ def build_pipeline(settings: Settings) -> PipelineBuild:
         tts=build_tts(settings.tts),
         context=interview_context(settings),
     )
+
+
+async def build_session_pipeline(settings: Settings, session_id: str) -> PipelineBuild:
+    """Build a pipeline bound to one interview session, with MCP tools attached."""
+    build = build_pipeline(settings)
+    if not settings.mcp.enabled:
+        return build
+
+    client = build_mcp_client(settings.mcp, session_id)
+    tools = await load_tools(client)
+    build.context = interview_context(settings, tools=tools)
+    build.mcp_client = client
+    return build

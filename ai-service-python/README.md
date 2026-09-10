@@ -10,6 +10,9 @@ Pipecat **STT → LLM → TTS** pipeline (`docs/ARCHITECTURE.md` §1).
   (`mock` by default), `/ws` WebSocket transport, stage-boundary metrics
   observer, offline clip harness.
   [spec](../docs/superpowers/specs/2026-09-10-ai-service-slice2-design.md)
+- **Slice 3** — MCP client: connects to the backend-go MCP server, loads
+  `oriva.tools.v1` into the LLM context per `/ws` connection.
+  [spec](../docs/superpowers/specs/2026-09-10-ai-service-slice3-design.md)
 
 ## Pipeline
 
@@ -19,9 +22,21 @@ dev default) needs no API keys or models. Real providers (`whisper`, `openai` /
 `pipecat-ai` extra is not installed raises a clear error.
 
 ```bash
-uv run oriva-ai                       # /ws pipeline endpoint on :8090
+uv run oriva-ai                       # /ws?session_id=<id> pipeline endpoint on :8090
 # offline: run one clip through the pipeline and print stage latencies
 uv run python -m oriva_ai.harness.run_clip src/oriva_ai/harness/fixtures/short_answer.wav
+```
+
+## MCP tools
+
+When `mcp.enabled`, each `/ws` connection opens an MCP client to the Go server
+(`mcp.server_url`, bearer `mcp.auth_token`) and hands the LLM the four
+`oriva.tools.v1` tools. `session_id` (the `/ws` query param) is bound to every
+tool call via `tools_arguments` — the LLM never sees it.
+
+```bash
+# live cross-service test (needs backend-go running)
+ORIVA_GO_MCP_URL=http://localhost:8080/mcp make test-integration
 ```
 
 ## Quick start

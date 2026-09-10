@@ -54,5 +54,7 @@ postgres:
 # Go implements the MCP server; this is where Pipecat's MCPClient connects.
 mcp:
   server_url: http://localhost:8080/mcp
+  enabled: true
+  auth_token: dev-mcp-token   # must match backend-go's mcp.auth_token
 
 metrics_enabled: true

@@ -6,15 +6,33 @@ from pipecat.tests.utils import run_test
 
 from oriva_ai.config import Settings
 from oriva_ai.harness.memory_transport import wav_to_frames
-from oriva_ai.pipeline import build_pipeline
+from oriva_ai.pipeline import build_pipeline, build_session_pipeline
+from oriva_ai.pipeline.context import interview_context
 from oriva_ai.pipeline.offline import Collector, build_offline_pipeline
 
 FIXTURE = "src/oriva_ai/harness/fixtures/short_answer.wav"
 
 
+def _mcp_disabled() -> Settings:
+    s = Settings()
+    s.mcp.enabled = False
+    return s
+
+
 def test_build_pipeline_all_mock() -> None:
     build = build_pipeline(Settings())
     assert build.stt.name and build.llm.name and build.tts.name
+
+
+async def test_build_session_pipeline_no_mcp_when_disabled() -> None:
+    build = await build_session_pipeline(_mcp_disabled(), "s1")
+    assert build.mcp_client is None
+    assert build.stt.name and build.llm.name
+
+
+def test_interview_context_tools_optional() -> None:
+    ctx = interview_context(Settings(), tools=None)
+    assert ctx.get_messages()  # system + greeting, no crash without tools
 
 
 async def test_mock_pipeline_runs_end_to_end() -> None:

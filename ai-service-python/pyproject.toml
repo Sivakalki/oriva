@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Oriva AI voice service — Pipecat STT -> LLM -> TTS pipeline"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "pipecat-ai[silero]>=1.8",
+    "pipecat-ai[mcp,silero]>=1.8",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
     "pyyaml>=6.0",
@@ -50,3 +50,7 @@ explicit_package_bases = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "integration: talks to a running backend-go MCP server (needs ORIVA_GO_MCP_URL)",
+]
+addopts = "-m 'not integration'"

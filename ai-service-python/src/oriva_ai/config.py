@@ -80,6 +80,8 @@ class PostgresConfig(BaseModel):
 
 class MCPConfig(BaseModel):
     server_url: str = "http://localhost:8080/mcp"
+    enabled: bool = True
+    auth_token: str = "dev-mcp-token"  # matches backend-go dev default
 
 
 class Settings(BaseSettings):

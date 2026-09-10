@@ -14,6 +14,7 @@ class PipelineSession:
     """Owns the PipelineTask + PipelineRunner for a single connection."""
 
     def __init__(self, build: PipelineBuild, transport: BaseTransport) -> None:
+        self._build = build
         self._task = build.make_task(transport)
         self._runner = PipelineRunner(handle_sigint=False)
 
@@ -22,6 +23,11 @@ class PipelineSession:
         try:
             await self._runner.run(self._task)
         finally:
+            if self._build.mcp_client is not None:
+                try:
+                    await self._build.mcp_client.close()
+                except Exception as exc:  # noqa: BLE001 — teardown best-effort
+                    logger.warning("mcp client close failed: {}", exc)
             logger.info("pipeline session ended")
 
     async def stop(self) -> None:

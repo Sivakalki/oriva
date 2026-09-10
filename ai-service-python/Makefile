@@ -1,4 +1,4 @@
-.PHONY: sync lock run dev test lint fmt typecheck check
+.PHONY: sync lock run dev test test-integration lint fmt typecheck check
 
 sync:
 	uv sync
@@ -14,6 +14,11 @@ dev:
 
 test:
 	uv run pytest
+
+# needs a running backend-go MCP server; set ORIVA_GO_MCP_URL (+ optionally
+# ORIVA_GO_MCP_TOKEN, ORIVA_GO_MCP_SESSION_ID)
+test-integration:
+	uv run pytest -m integration
 
 lint:
 	uv run ruff check .
