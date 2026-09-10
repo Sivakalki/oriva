@@ -39,10 +39,15 @@ are not started.
 - ✅ **React frontend shell** (`frontend/`, Vite + React + Tailwind v4 + shadcn):
   recruiter auth, interviews dashboard, jobs/candidates lists + create, schedule
   flow, interview detail with the state-advance control. Plus the **public
-  candidate landing page** (`/join/:token`) that shows a countdown before the
-  interview, "start" when open, and "you're N minutes late" after — backed by
-  `GET /api/v1/join/{token}` and the invite email sent on scheduling (backend
-  slice 5). Call UI is deferred. *(frontend slice 1, backend-go slice 5)*
+  candidate landing page** (`/join/:token`) — countdown before, "start" when open,
+  "you're N minutes late" after — backed by `GET /api/v1/join/{token}` and the
+  invite email sent on scheduling. *(frontend slice 1, backend-go slice 5)*
+- ✅ **Call UI** (`/interview/:token`): the candidate joins a live voice session
+  against the ai-service pipeline. `/join` returns `session_id` + `ai_ws_url`;
+  the frontend connects `@pipecat-ai/client-js` over WebSocket to
+  `${ai_ws_url}?token=`; the ai-service resolves the token → session via Go and
+  gates on phase. Speaking indicator + live transcript + End. Real spoken audio
+  back waits on a real TTS (still `mock`). *(call UI slice, all 3 repos)*
 - 🟡 **Postgres schema:** organizations → jobs → candidates → interview_sessions
   → responses → scores, plus the state tables — all created (migrations
   0001–0004). Still draft; `responses`/`scores` will be refined as scoring lands.
