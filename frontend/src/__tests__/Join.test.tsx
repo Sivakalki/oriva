@@ -50,7 +50,8 @@ describe("Join page", () => {
     mockJoin(200, { ...base, phase: "open" })
     renderJoin()
     expect(await screen.findByText(/on time/i)).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /start interview/i })).toBeInTheDocument()
+    const link = screen.getByRole("link", { name: /start interview/i })
+    expect(link).toHaveAttribute("href", "/interview/tok")
   })
 
   it("shows minutes late when late", async () => {

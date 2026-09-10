@@ -84,6 +84,10 @@ class MCPConfig(BaseModel):
     auth_token: str = "dev-mcp-token"  # matches backend-go dev default
 
 
+class BackendConfig(BaseModel):
+    base_url: str = "http://localhost:8080"  # backend-go origin (join-token lookup)
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="ORIVA_AI__",
@@ -101,6 +105,7 @@ class Settings(BaseSettings):
     pipeline: PipelineConfig = Field(default_factory=PipelineConfig)
     postgres: PostgresConfig = Field(default_factory=PostgresConfig)
     mcp: MCPConfig = Field(default_factory=MCPConfig)
+    backend: BackendConfig = Field(default_factory=BackendConfig)
     metrics_enabled: bool = True
 
     @classmethod

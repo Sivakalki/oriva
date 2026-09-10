@@ -22,12 +22,16 @@ func (f fakeRepo) JoinByToken(context.Context, string) (*postgres.JoinInfo, erro
 }
 
 func svcAt(now time.Time, info *postgres.JoinInfo) *Service {
-	return &Service{repo: fakeRepo{info: info}, now: func() time.Time { return now }}
+	return &Service{
+		repo:    fakeRepo{info: info},
+		aiWsURL: "ws://ai.test/ws",
+		now:     func() time.Time { return now },
+	}
 }
 
 func TestStatus_Phases(t *testing.T) {
 	sched := time.Date(2026, 9, 20, 12, 0, 0, 0, time.UTC)
-	base := &postgres.JoinInfo{JobTitle: "Role", ScheduledAt: sched}
+	base := &postgres.JoinInfo{SessionID: "sess-1", JobTitle: "Role", ScheduledAt: sched}
 
 	cases := []struct {
 		name      string
@@ -51,6 +55,8 @@ func TestStatus_Phases(t *testing.T) {
 			assert.Equal(t, c.wantPhase, st.Phase)
 			assert.Equal(t, c.wantLate, st.LateBySeconds)
 			assert.Equal(t, "Role", st.JobTitle)
+			assert.Equal(t, "sess-1", st.SessionID)
+			assert.Equal(t, "ws://ai.test/ws", st.AIWsURL)
 		})
 	}
 }

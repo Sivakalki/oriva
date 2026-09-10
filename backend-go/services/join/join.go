@@ -21,12 +21,15 @@ type repo interface {
 
 // Service resolves join tokens.
 type Service struct {
-	repo repo
-	now  func() time.Time
+	repo    repo
+	aiWsURL string
+	now     func() time.Time
 }
 
 // NewService constructs a join Service.
-func NewService(r repo) *Service { return &Service{repo: r, now: time.Now} }
+func NewService(r repo, aiWsURL string) *Service {
+	return &Service{repo: r, aiWsURL: aiWsURL, now: time.Now}
+}
 
 // Phase values.
 const (
@@ -43,6 +46,8 @@ type Status struct {
 	ServerNow     time.Time `json:"server_now"`
 	Phase         string    `json:"phase"`
 	LateBySeconds int       `json:"late_by_seconds"`
+	SessionID     string    `json:"session_id"`
+	AIWsURL       string    `json:"ai_ws_url"`
 }
 
 // Status resolves the token or returns a NotFound error.
@@ -60,6 +65,8 @@ func (s *Service) Status(ctx context.Context, token string) (*Status, error) {
 		JobTitle:    info.JobTitle,
 		ScheduledAt: info.ScheduledAt.UTC(),
 		ServerNow:   now,
+		SessionID:   info.SessionID,
+		AIWsURL:     s.aiWsURL,
 	}
 
 	switch {

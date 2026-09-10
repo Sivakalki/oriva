@@ -57,4 +57,8 @@ mcp:
   enabled: true
   auth_token: dev-mcp-token   # must match backend-go's mcp.auth_token
 
+# backend-go origin, used to resolve a candidate join token -> session id on /ws.
+backend:
+  base_url: http://localhost:8080
+
 metrics_enabled: true

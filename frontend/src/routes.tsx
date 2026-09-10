@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom"
 
 import { RequireAuth } from "@/auth/RequireAuth"
 import { AppShell } from "@/components/AppShell"
+import { Call } from "@/pages/Call"
 import { Candidates } from "@/pages/Candidates"
 import { Dashboard } from "@/pages/Dashboard"
 import { InterviewDetail } from "@/pages/InterviewDetail"
@@ -14,6 +15,7 @@ import { ScheduleInterview } from "@/pages/ScheduleInterview"
 export const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
   { path: "/join/:token", element: <Join /> },
+  { path: "/interview/:token", element: <Call /> },
   {
     element: <RequireAuth />,
     children: [

@@ -64,6 +64,7 @@ func scanDetail(row pgx.Row) (*interview.Detail, error) {
 
 // JoinInfo is the candidate-facing view resolved from a join token.
 type JoinInfo struct {
+	SessionID   string
 	JobTitle    string
 	ScheduledAt time.Time
 	State       string
@@ -74,12 +75,12 @@ type JoinInfo struct {
 func (r *InterviewRepo) JoinByToken(ctx context.Context, token string) (*JoinInfo, error) {
 	var ji JoinInfo
 	err := r.pool.QueryRow(ctx, `
-		SELECT j.title, s.scheduled_at, s.state, ss.is_terminal
+		SELECT s.id, j.title, s.scheduled_at, s.state, ss.is_terminal
 		FROM interview_sessions s
 		JOIN jobs j ON j.id = s.job_id
 		JOIN session_states ss ON ss.name = s.state
 		WHERE s.join_token = $1`, token).
-		Scan(&ji.JobTitle, &ji.ScheduledAt, &ji.State, &ji.IsTerminal)
+		Scan(&ji.SessionID, &ji.JobTitle, &ji.ScheduledAt, &ji.State, &ji.IsTerminal)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}

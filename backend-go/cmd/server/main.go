@@ -115,7 +115,7 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 	}
 	interviewsSvc := interviews.NewService(
 		interviewRepo, jobRepo, candRepo, notifier, cfg.WebApp.BaseURL, logger)
-	joinSvc := join.NewService(interviewRepo)
+	joinSvc := join.NewService(interviewRepo, cfg.WebApp.AIWsURL)
 
 	hs := apxhttp.Handlers{
 		Auth:       handlers.NewAuthHandler(auth.NewService(userRepo, jwtSvc)),

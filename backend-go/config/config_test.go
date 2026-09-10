@@ -24,6 +24,8 @@ func TestValidate_Happy(t *testing.T) {
 	assert.Equal(t, time.Hour, c.Auth.AccessTTLDur)
 	assert.Equal(t, time.Hour, c.Postgres.MaxConnLifetimeDur)
 	assert.NotEmpty(t, c.Logger.HostName)
+	assert.Equal(t, "http://localhost:5173", c.WebApp.BaseURL)
+	assert.Equal(t, "ws://localhost:8090/ws", c.WebApp.AIWsURL)
 }
 
 func TestValidate_MCP(t *testing.T) {
@@ -58,6 +60,7 @@ func TestValidate_Errors(t *testing.T) {
 		"mcp bad path": func(c *Config) {
 			c.MCP = MCP{Enabled: true, Path: "mcp", AuthToken: "tok"}
 		},
+		"ai_ws_url http scheme": func(c *Config) { c.WebApp.AIWsURL = "http://localhost:8090/ws" },
 	}
 	for name, mut := range cases {
 		t.Run(name, func(t *testing.T) {

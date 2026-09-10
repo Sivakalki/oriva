@@ -24,6 +24,7 @@ mcp:
 
 app:
   base_url: "http://localhost:5173"
+  ai_ws_url: "ws://localhost:8090/ws"
 
 notify:
   transport: "log"

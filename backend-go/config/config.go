@@ -39,6 +39,7 @@ mcp:
 
 app:
   base_url: "http://localhost:5173"
+  ai_ws_url: "ws://localhost:8090/ws"
 
 notify:
   transport: "log"
@@ -61,6 +62,7 @@ type Config struct {
 // candidate-facing URLs).
 type WebApp struct {
 	BaseURL string `koanf:"base_url"`
+	AIWsURL string `koanf:"ai_ws_url"` // ai-service websocket endpoint for the call UI
 }
 
 type MCP struct {
@@ -168,6 +170,11 @@ func (c *Config) Validate() error {
 		c.WebApp.BaseURL = "http://localhost:5173"
 	} else if _, err := url.Parse(c.WebApp.BaseURL); err != nil {
 		ve.Add("app.base_url", "must be a valid URL")
+	}
+	if c.WebApp.AIWsURL == "" {
+		c.WebApp.AIWsURL = "ws://localhost:8090/ws"
+	} else if u, err := url.Parse(c.WebApp.AIWsURL); err != nil || (u.Scheme != "ws" && u.Scheme != "wss") {
+		ve.Add("app.ai_ws_url", "must be a ws:// or wss:// URL")
 	}
 
 	if c.Notify.Transport == "" {

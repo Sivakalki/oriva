@@ -777,6 +777,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "loguru" },
     { name = "pipecat-ai", extra = ["mcp"] },
     { name = "prometheus-client" },
@@ -799,6 +800,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "loguru", specifier = ">=0.7" },
     { name = "pipecat-ai", extras = ["mcp", "silero"], specifier = ">=1.8" },
     { name = "prometheus-client", specifier = ">=0.20" },

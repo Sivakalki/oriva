@@ -28,7 +28,7 @@ func TestInterviewRepo_JoinByToken(t *testing.T) {
 	at := time.Now().Add(24 * time.Hour).UTC().Truncate(time.Second)
 
 	tok1 := jointoken.New()
-	_, err = repo.Schedule(ctx, org, job.ID, cand.ID, tok1, at)
+	sid1, err := repo.Schedule(ctx, org, job.ID, cand.ID, tok1, at)
 	require.NoError(t, err)
 	tok2 := jointoken.New()
 	_, err = repo.Schedule(ctx, org, job.ID, cand.ID, tok2, at)
@@ -37,6 +37,7 @@ func TestInterviewRepo_JoinByToken(t *testing.T) {
 
 	info, err := repo.JoinByToken(ctx, tok1)
 	require.NoError(t, err)
+	assert.Equal(t, sid1, info.SessionID)
 	assert.Equal(t, "Backend Eng", info.JobTitle)
 	assert.Equal(t, "scheduled", info.State)
 	assert.False(t, info.IsTerminal)

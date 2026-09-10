@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
-import { useParams } from "react-router-dom"
+import { Link, useParams } from "react-router-dom"
 
 import { useJoinStatus } from "@/api/hooks"
 import type { JoinStatus } from "@/api/types"
@@ -31,19 +31,15 @@ function Countdown({ target, serverNow }: { target: string; serverNow: string })
   return <span className="tabular-nums">{h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`}</span>
 }
 
-function StartButton({ muted = false }: { muted?: boolean }) {
+function StartButton({ token, muted = false }: { token: string; muted?: boolean }) {
   return (
-    <Button
-      className="w-full"
-      variant={muted ? "outline" : "default"}
-      onClick={() => alert("The interview experience is coming soon.")}
-    >
-      Start interview
+    <Button className="w-full" variant={muted ? "outline" : "default"} asChild>
+      <Link to={`/interview/${token}`}>Start interview</Link>
     </Button>
   )
 }
 
-function PhaseView({ s }: { s: JoinStatus }) {
+function PhaseView({ s, token }: { s: JoinStatus; token: string }) {
   if (s.phase === "before") {
     return (
       <>
@@ -72,7 +68,7 @@ function PhaseView({ s }: { s: JoinStatus }) {
           <p className="text-sm text-muted-foreground">
             Interview for {s.job_title}. You can begin now.
           </p>
-          <StartButton />
+          <StartButton token={token} />
         </CardContent>
       </>
     )
@@ -90,7 +86,7 @@ function PhaseView({ s }: { s: JoinStatus }) {
           <p className="text-sm text-muted-foreground">
             Interview for {s.job_title}. You can still start.
           </p>
-          <StartButton muted />
+          <StartButton token={token} muted />
         </CardContent>
       </>
     )
@@ -133,7 +129,7 @@ export function Join() {
 
   return (
     <Frame>
-      <PhaseView s={q.data} />
+      <PhaseView s={q.data} token={token} />
     </Frame>
   )
 }

@@ -61,6 +61,8 @@ export interface JoinStatus {
   server_now: string
   phase: JoinPhase
   late_by_seconds: number
+  session_id: string
+  ai_ws_url: string
 }
 
 export interface ListResponse<T> {

@@ -1,8 +1,8 @@
 """Local WebSocket transport: one Pipecat session per `/ws` connection.
 
-No telephony — this is the bake-off's local transport (docs/PLAN.md Phase 1).
-Connect with `/ws?session_id=<interview session id>`; the id is bound to every
-MCP tool call the LLM makes during the interview.
+Connect with `/ws?token=<join token>` (preferred) — the ai-service resolves the
+interview session and phase from backend-go. `/ws?session_id=<id>` is kept for
+tests. No telephony (docs/PLAN.md Phase 1).
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from pipecat.transports.websocket.fastapi import (
 from oriva_ai.config import Settings
 from oriva_ai.pipeline import PipelineSession
 from oriva_ai.pipeline.assembly import build_session_pipeline
+from oriva_ai.pipeline.join_lookup import TokenNotFound, resolve_token
 
 _WS_POLICY_VIOLATION = 1008
 
@@ -26,10 +27,27 @@ def register_ws_route(app: FastAPI) -> None:
     @app.websocket("/ws")
     async def ws(websocket: WebSocket) -> None:
         settings: Settings = app.state.settings
+        token = websocket.query_params.get("token")
         session_id = websocket.query_params.get("session_id")
+
+        if token:
+            try:
+                resolved = await resolve_token(settings.backend.base_url, token)
+            except TokenNotFound:
+                await websocket.close(code=_WS_POLICY_VIOLATION, reason="invalid interview link")
+                return
+            except Exception as exc:  # noqa: BLE001 — backend unreachable etc.
+                logger.warning("join token resolve failed: {}", exc)
+                await websocket.close(code=_WS_POLICY_VIOLATION, reason="could not verify link")
+                return
+            if resolved.phase == "closed":
+                await websocket.close(code=_WS_POLICY_VIOLATION, reason="interview has ended")
+                return
+            session_id = resolved.session_id
+
         if settings.mcp.enabled and not session_id:
             await websocket.close(
-                code=_WS_POLICY_VIOLATION, reason="session_id query param required"
+                code=_WS_POLICY_VIOLATION, reason="token or session_id query param required"
             )
             return
 

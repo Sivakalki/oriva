@@ -62,3 +62,33 @@ def test_ws_requires_session_id_when_mcp_enabled(settings: Settings) -> None:
             with client.websocket_connect("/ws"):
                 pass
     assert exc.value.code == 1008
+
+
+def test_ws_token_closed_phase_rejected(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from oriva_ai.pipeline.join_lookup import Resolved
+
+    async def fake_resolve(_base: str, _token: str) -> Resolved:
+        return Resolved(session_id="s1", phase="closed")
+
+    monkeypatch.setattr("oriva_ai.transport.websocket.resolve_token", fake_resolve)
+    with TestClient(create_app(settings)) as client:
+        with pytest.raises(WebSocketDisconnect) as exc:
+            with client.websocket_connect("/ws?token=whatever"):
+                pass
+    assert exc.value.code == 1008
+
+
+def test_ws_token_invalid_rejected(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
+    from oriva_ai.pipeline.join_lookup import TokenNotFound
+
+    async def fake_resolve(_base: str, _token: str) -> object:
+        raise TokenNotFound("nope")
+
+    monkeypatch.setattr("oriva_ai.transport.websocket.resolve_token", fake_resolve)
+    with TestClient(create_app(settings)) as client:
+        with pytest.raises(WebSocketDisconnect) as exc:
+            with client.websocket_connect("/ws?token=nope"):
+                pass
+    assert exc.value.code == 1008
