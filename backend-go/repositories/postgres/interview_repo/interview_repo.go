@@ -21,23 +21,25 @@ type InterviewRepo struct{ pool *pgxpool.Pool }
 // New constructs an InterviewRepo.
 func New(pool *pgxpool.Pool) *InterviewRepo { return &InterviewRepo{pool: pool} }
 
-// Schedule inserts a session in the "scheduled" state with the given join token.
+// Schedule inserts a session in the "scheduled" state with the given join
+// token. durationMinutes is the recruiter's max-length setting for the call
+// (services/interviews applies a default before this is called).
 func (r *InterviewRepo) Schedule(
-	ctx context.Context, orgID, jobID, candidateID, joinToken string, scheduledAt time.Time,
+	ctx context.Context, orgID, jobID, candidateID, joinToken string, scheduledAt time.Time, durationMinutes int,
 ) (string, error) {
 	var id string
 	q := `
-		INSERT INTO interview_sessions (org_id, job_id, candidate_id, state, scheduled_at, join_token)
-		VALUES ($1, $2, $3, 'scheduled', $4, $5)
+		INSERT INTO interview_sessions (org_id, job_id, candidate_id, state, scheduled_at, join_token, duration_minutes)
+		VALUES ($1, $2, $3, 'scheduled', $4, $5, $6)
 		RETURNING id`
-	if err := r.pool.QueryRow(ctx, q, orgID, jobID, candidateID, scheduledAt, joinToken).Scan(&id); err != nil {
+	if err := r.pool.QueryRow(ctx, q, orgID, jobID, candidateID, scheduledAt, joinToken, durationMinutes).Scan(&id); err != nil {
 		return "", err
 	}
 	return id, nil
 }
 
 const detailSelect = `
-	SELECT s.id, s.state, ss.label, s.scheduled_at, s.created_at, s.join_token,
+	SELECT s.id, s.state, ss.label, s.scheduled_at, s.created_at, s.join_token, s.duration_minutes,
 	       j.id, j.title,
 	       c.id, c.name, c.email
 	FROM interview_sessions s
@@ -47,7 +49,7 @@ const detailSelect = `
 
 func scanDetailInto(row pgx.Row, d *interview.Detail) error {
 	return row.Scan(
-		&d.ID, &d.State, &d.StateLabel, &d.ScheduledAt, &d.CreatedAt, &d.JoinToken,
+		&d.ID, &d.State, &d.StateLabel, &d.ScheduledAt, &d.CreatedAt, &d.JoinToken, &d.DurationMinutes,
 		&d.Job.ID, &d.Job.Title,
 		&d.Candidate.ID, &d.Candidate.Name, &d.Candidate.Email,
 	)
@@ -66,23 +68,24 @@ func scanDetail(row pgx.Row) (*interview.Detail, error) {
 
 // JoinInfo is the candidate-facing view resolved from a join token.
 type JoinInfo struct {
-	SessionID   string
-	JobTitle    string
-	ScheduledAt time.Time
-	State       string
-	IsTerminal  bool
+	SessionID       string
+	JobTitle        string
+	ScheduledAt     time.Time
+	State           string
+	IsTerminal      bool
+	DurationMinutes int
 }
 
 // JoinByToken resolves a candidate join token, or ErrNotFound.
 func (r *InterviewRepo) JoinByToken(ctx context.Context, token string) (*JoinInfo, error) {
 	var ji JoinInfo
 	err := r.pool.QueryRow(ctx, `
-		SELECT s.id, j.title, s.scheduled_at, s.state, ss.is_terminal
+		SELECT s.id, j.title, s.scheduled_at, s.state, ss.is_terminal, s.duration_minutes
 		FROM interview_sessions s
 		JOIN jobs j ON j.id = s.job_id
 		JOIN session_states ss ON ss.name = s.state
 		WHERE s.join_token = $1`, token).
-		Scan(&ji.SessionID, &ji.JobTitle, &ji.ScheduledAt, &ji.State, &ji.IsTerminal)
+		Scan(&ji.SessionID, &ji.JobTitle, &ji.ScheduledAt, &ji.State, &ji.IsTerminal, &ji.DurationMinutes)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, postgres.ErrNotFound
 	}
@@ -116,18 +119,19 @@ type PlanData struct {
 	JobDescription  string
 	CandidateName   string
 	CandidateResume string
+	DurationMinutes int
 }
 
 // PlanData returns the plan inputs for a session in the org, or ErrNotFound.
 func (r *InterviewRepo) PlanData(ctx context.Context, orgID, sessionID string) (*PlanData, error) {
 	var p PlanData
 	err := r.pool.QueryRow(ctx, `
-		SELECT s.state, j.title, j.description, c.name, c.resume_text
+		SELECT s.state, j.title, j.description, c.name, c.resume_text, s.duration_minutes
 		FROM interview_sessions s
 		JOIN jobs j ON j.id = s.job_id
 		JOIN candidates c ON c.id = s.candidate_id
 		WHERE s.org_id = $1 AND s.id = $2`, orgID, sessionID).
-		Scan(&p.State, &p.JobTitle, &p.JobDescription, &p.CandidateName, &p.CandidateResume)
+		Scan(&p.State, &p.JobTitle, &p.JobDescription, &p.CandidateName, &p.CandidateResume, &p.DurationMinutes)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, postgres.ErrNotFound
 	}

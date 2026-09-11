@@ -24,7 +24,7 @@ type fakeRepo struct {
 	getCalls  int
 }
 
-func (f *fakeRepo) Schedule(_ context.Context, _, _, _, token string, _ time.Time) (string, error) {
+func (f *fakeRepo) Schedule(_ context.Context, _, _, _, token string, _ time.Time, _ int) (string, error) {
 	f.scheduled = true
 	f.gotToken = token
 	return "s1", nil

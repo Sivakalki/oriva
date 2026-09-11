@@ -79,7 +79,8 @@ func (s *Server) router() chi.Router {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", s.health.Check)
 		r.Handle("/metrics", promhttp.Handler())
-		r.Get("/join/{token}", s.toHandlerFunc(s.join.Status)) // public — token is the credential
+		r.Get("/join/{token}", s.toHandlerFunc(s.join.Status))        // public — token is the credential
+		r.Post("/join/{token}/start", s.toHandlerFunc(s.join.Start)) // public — same token as credential
 
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/login", s.toHandlerFunc(s.auth.Login))

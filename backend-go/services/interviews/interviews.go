@@ -17,9 +17,20 @@ import (
 	"go.uber.org/zap"
 )
 
+// DefaultDurationMinutes is applied when the recruiter doesn't set one.
+const DefaultDurationMinutes = 30
+
+// MinDurationMinutes / MaxDurationMinutes bound what a recruiter can set.
+const (
+	MinDurationMinutes = 5
+	MaxDurationMinutes = 120
+)
+
 // Consumed contracts.
 type interviewRepo interface {
-	Schedule(ctx context.Context, orgID, jobID, candidateID, joinToken string, scheduledAt time.Time) (string, error)
+	Schedule(
+		ctx context.Context, orgID, jobID, candidateID, joinToken string, scheduledAt time.Time, durationMinutes int,
+	) (string, error)
 	Get(ctx context.Context, orgID, id string) (*interview.Detail, error)
 	List(ctx context.Context, orgID string, f interview.Filter) ([]interview.Detail, error)
 }
@@ -64,10 +75,12 @@ func NewService(
 }
 
 // ScheduleInput is the schedule payload. ScheduledAt is an RFC3339 string.
+// DurationMinutes <= 0 gets DefaultDurationMinutes applied.
 type ScheduleInput struct {
-	JobID       string
-	CandidateID string
-	ScheduledAt string
+	JobID           string
+	CandidateID     string
+	ScheduledAt     string
+	DurationMinutes int
 }
 
 // Schedule validates the request, checks org ownership of the job and candidate,
@@ -86,6 +99,11 @@ func (s *Service) Schedule(ctx context.Context, orgID string, in ScheduleInput) 
 	} else if !at.After(s.now()) {
 		ve.Add("scheduled_at", "must be in the future")
 	}
+	if in.DurationMinutes == 0 {
+		in.DurationMinutes = DefaultDurationMinutes
+	} else if in.DurationMinutes < MinDurationMinutes || in.DurationMinutes > MaxDurationMinutes {
+		ve.Add("duration_minutes", "must be between 5 and 120")
+	}
 	if verr := ve.Err(); verr != nil {
 		return nil, apxerrors.ValidationFailedErr(verr)
 	}
@@ -102,7 +120,7 @@ func (s *Service) Schedule(ctx context.Context, orgID string, in ScheduleInput) 
 	}
 
 	token := helpers.NewJoinToken()
-	id, err := s.repo.Schedule(ctx, orgID, in.JobID, in.CandidateID, token, at.UTC())
+	id, err := s.repo.Schedule(ctx, orgID, in.JobID, in.CandidateID, token, at.UTC(), in.DurationMinutes)
 	if err != nil {
 		return nil, err
 	}

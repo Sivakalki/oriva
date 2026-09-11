@@ -6,12 +6,14 @@ import (
 	"time"
 
 	apxerrors "oriva/backend-go/errors"
+	"oriva/backend-go/models/interview"
 	"oriva/backend-go/repositories/postgres"
 	"oriva/backend-go/repositories/postgres/interview_repo"
 	"oriva/backend-go/services/join"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 type fakeRepo struct {
@@ -23,8 +25,22 @@ func (f fakeRepo) JoinByToken(context.Context, string) (*interview_repo.JoinInfo
 	return f.info, f.err
 }
 
+func (f fakeRepo) OrgOf(context.Context, string) (string, error) {
+	return "org-1", nil
+}
+
+type fakeAdvancer struct {
+	calls []string
+	err   error
+}
+
+func (f *fakeAdvancer) Advance(_ context.Context, _, _, toState, _, _ string) (*interview.Detail, error) {
+	f.calls = append(f.calls, toState)
+	return &interview.Detail{State: toState}, f.err
+}
+
 func svcAt(now time.Time, info *interview_repo.JoinInfo) *join.Service {
-	return join.NewServiceWithClock(fakeRepo{info: info}, "ws://ai.test/ws", func() time.Time { return now })
+	return join.NewServiceWithClock(fakeRepo{info: info}, &fakeAdvancer{}, "ws://ai.test/ws", zap.NewNop(), func() time.Time { return now })
 }
 
 func TestStatus_Phases(t *testing.T) {
@@ -60,8 +76,52 @@ func TestStatus_Phases(t *testing.T) {
 }
 
 func TestStatus_UnknownToken(t *testing.T) {
-	s := join.NewService(fakeRepo{err: postgres.ErrNotFound}, "ws://ai.test/ws")
+	s := join.NewService(fakeRepo{err: postgres.ErrNotFound}, &fakeAdvancer{}, "ws://ai.test/ws", zap.NewNop())
 	_, err := s.Status(context.Background(), "nope")
+	var ae *apxerrors.Error
+	require.True(t, apxerrors.As(err, &ae))
+	assert.Equal(t, apxerrors.NotFound, ae.Kind)
+}
+
+func TestStart_WalksPreCallChain(t *testing.T) {
+	info := &interview_repo.JoinInfo{SessionID: "sess-1", State: "scheduled"}
+	adv := &fakeAdvancer{}
+	s := join.NewServiceWithClock(fakeRepo{info: info}, adv, "ws://ai.test/ws", zap.NewNop(), time.Now)
+	err := s.Start(context.Background(), "tok")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"invited", "ready", "dispatched", "in_progress"}, adv.calls)
+}
+
+func TestStart_PartwayThroughChain(t *testing.T) {
+	info := &interview_repo.JoinInfo{SessionID: "sess-1", State: "dispatched"}
+	adv := &fakeAdvancer{}
+	s := join.NewServiceWithClock(fakeRepo{info: info}, adv, "ws://ai.test/ws", zap.NewNop(), time.Now)
+	err := s.Start(context.Background(), "tok")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"in_progress"}, adv.calls)
+}
+
+func TestStart_TerminalIsNoop(t *testing.T) {
+	info := &interview_repo.JoinInfo{SessionID: "sess-1", State: "completed", IsTerminal: true}
+	adv := &fakeAdvancer{}
+	s := join.NewServiceWithClock(fakeRepo{info: info}, adv, "ws://ai.test/ws", zap.NewNop(), time.Now)
+	err := s.Start(context.Background(), "tok")
+	require.NoError(t, err)
+	assert.Empty(t, adv.calls)
+}
+
+func TestStart_NotInPreCallChainIsNoop(t *testing.T) {
+	info := &interview_repo.JoinInfo{SessionID: "sess-1", State: "scoring"}
+	adv := &fakeAdvancer{}
+	s := join.NewServiceWithClock(fakeRepo{info: info}, adv, "ws://ai.test/ws", zap.NewNop(), time.Now)
+	err := s.Start(context.Background(), "tok")
+	require.NoError(t, err)
+	assert.Empty(t, adv.calls)
+}
+
+func TestStart_UnknownToken(t *testing.T) {
+	s := join.NewService(fakeRepo{err: postgres.ErrNotFound}, &fakeAdvancer{}, "ws://ai.test/ws", zap.NewNop())
+	err := s.Start(context.Background(), "nope")
 	var ae *apxerrors.Error
 	require.True(t, apxerrors.As(err, &ae))
 	assert.Equal(t, apxerrors.NotFound, ae.Kind)

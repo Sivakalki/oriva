@@ -52,13 +52,14 @@ type ScoreSummary struct {
 // and TurnScores are only populated by Get (not List, to keep the dashboard
 // table cheap) and only once scoring has actually run -- nil/empty until then.
 type Detail struct {
-	ID          string    `json:"id"`
-	State       string    `json:"state"`
-	StateLabel  string    `json:"state_label"`
-	ScheduledAt time.Time `json:"scheduled_at"`
-	Job         JobRef    `json:"job"`
-	Candidate   CandRef   `json:"candidate"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID              string    `json:"id"`
+	State           string    `json:"state"`
+	StateLabel      string    `json:"state_label"`
+	ScheduledAt     time.Time `json:"scheduled_at"`
+	DurationMinutes int       `json:"duration_minutes"`
+	Job             JobRef    `json:"job"`
+	Candidate       CandRef   `json:"candidate"`
+	CreatedAt       time.Time `json:"created_at"`
 
 	JoinToken string `json:"join_token"`
 	JoinURL   string `json:"join_url,omitempty"`

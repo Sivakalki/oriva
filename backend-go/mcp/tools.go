@@ -48,6 +48,7 @@ type PlanOut struct {
 	JobDescription  string `json:"job_description"`
 	CandidateName   string `json:"candidate_name"`
 	CandidateResume string `json:"candidate_resume"`
+	DurationMinutes int    `json:"duration_minutes"`
 	SchemaVersion   string `json:"schema_version"`
 }
 
@@ -72,6 +73,7 @@ func (h *handlers) getInterviewPlan(
 		JobDescription:  p.JobDescription,
 		CandidateName:   p.CandidateName,
 		CandidateResume: p.CandidateResume,
+		DurationMinutes: p.DurationMinutes,
 		SchemaVersion:   SchemaVersion,
 	}, nil
 }

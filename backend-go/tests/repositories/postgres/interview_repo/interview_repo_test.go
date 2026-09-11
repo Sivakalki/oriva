@@ -31,7 +31,7 @@ func TestInterviewRepo_ScheduleGetList(t *testing.T) {
 
 	repo := interview_repo.New(pool)
 	at := time.Now().Add(48 * time.Hour).UTC().Truncate(time.Second)
-	id, err := repo.Schedule(ctx, org, j.ID, c.ID, helpers.NewJoinToken(), at)
+	id, err := repo.Schedule(ctx, org, j.ID, c.ID, helpers.NewJoinToken(), at, 30)
 	require.NoError(t, err)
 
 	d, err := repo.Get(ctx, org, id)
@@ -64,10 +64,10 @@ func TestInterviewRepo_JoinByToken(t *testing.T) {
 	at := time.Now().Add(24 * time.Hour).UTC().Truncate(time.Second)
 
 	tok1 := helpers.NewJoinToken()
-	sid1, err := repo.Schedule(ctx, org, job.ID, cand.ID, tok1, at)
+	sid1, err := repo.Schedule(ctx, org, job.ID, cand.ID, tok1, at, 30)
 	require.NoError(t, err)
 	tok2 := helpers.NewJoinToken()
-	_, err = repo.Schedule(ctx, org, job.ID, cand.ID, tok2, at)
+	_, err = repo.Schedule(ctx, org, job.ID, cand.ID, tok2, at, 30)
 	require.NoError(t, err)
 	assert.NotEqual(t, tok1, tok2)
 
@@ -94,7 +94,7 @@ func TestInterviewRepo_ApplyTransition_CASAndAudit(t *testing.T) {
 	require.NoError(t, err)
 
 	repo := interview_repo.New(pool)
-	id, err := repo.Schedule(ctx, org, job.ID, cand.ID, helpers.NewJoinToken(), time.Now().Add(24*time.Hour))
+	id, err := repo.Schedule(ctx, org, job.ID, cand.ID, helpers.NewJoinToken(), time.Now().Add(24*time.Hour), 30)
 	require.NoError(t, err)
 
 	cur, err := repo.CurrentState(ctx, org, id)
@@ -141,7 +141,7 @@ func TestInterviewRepo_OrgOfAndPlanData(t *testing.T) {
 	require.NoError(t, err)
 
 	iv := interview_repo.New(pool)
-	sid, err := iv.Schedule(ctx, org, job.ID, cand.ID, helpers.NewJoinToken(), time.Now().Add(24*time.Hour))
+	sid, err := iv.Schedule(ctx, org, job.ID, cand.ID, helpers.NewJoinToken(), time.Now().Add(24*time.Hour), 30)
 	require.NoError(t, err)
 
 	gotOrg, err := iv.OrgOf(ctx, sid)

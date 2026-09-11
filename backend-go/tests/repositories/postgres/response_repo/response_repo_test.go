@@ -30,7 +30,7 @@ func TestResponseRepo_RecordAndConflict(t *testing.T) {
 	require.NoError(t, err)
 
 	iv := interview_repo.New(pool)
-	sid, err := iv.Schedule(ctx, org, job.ID, cand.ID, helpers.NewJoinToken(), time.Now().Add(24*time.Hour))
+	sid, err := iv.Schedule(ctx, org, job.ID, cand.ID, helpers.NewJoinToken(), time.Now().Add(24*time.Hour), 30)
 	require.NoError(t, err)
 
 	rr := response_repo.New(pool)

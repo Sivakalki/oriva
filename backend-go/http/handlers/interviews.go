@@ -35,9 +35,10 @@ func NewInterviewsHandler(svc interviewsService, sessions sessionsService) *Inte
 }
 
 type scheduleBody struct {
-	JobID       string `json:"job_id"`
-	CandidateID string `json:"candidate_id"`
-	ScheduledAt string `json:"scheduled_at"`
+	JobID           string `json:"job_id"`
+	CandidateID     string `json:"candidate_id"`
+	ScheduledAt     string `json:"scheduled_at"`
+	DurationMinutes int    `json:"duration_minutes,omitempty"`
 }
 
 // Schedule handles POST /interviews.
@@ -52,6 +53,7 @@ func (h *Interviews) Schedule(w http.ResponseWriter, r *http.Request) (any, int,
 	}
 	d, err := h.svc.Schedule(r.Context(), org, interviews.ScheduleInput{
 		JobID: b.JobID, CandidateID: b.CandidateID, ScheduledAt: b.ScheduledAt,
+		DurationMinutes: b.DurationMinutes,
 	})
 	if err != nil {
 		return nil, 0, err
