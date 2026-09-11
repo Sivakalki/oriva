@@ -21,23 +21,26 @@ transport:
   type: websocket
 
 # STT / LLM / TTS are all pluggable and vendor-undecided (docs/ARCHITECTURE.md 3).
-# The dev default is "mock" so the pipeline runs with no external services or
-# API keys. The bake-off flips these to whisper / litellm / piper etc.
+# Demo config: real providers, all local (no external API keys). See
+# docs/PLAN.md for the eventual bake-off-driven vendor choice — this is a
+# fast, free stopgap for live demos, not the final pick.
 stt:
-  provider: mock
-  model: base.en
+  provider: whisper
+  model: small.en
   language: en
   mock_transcript: "I have about five years of backend experience."
 
+# Ollama, OpenAI-compatible endpoint (http://localhost:11434/v1), model
+# pulled locally as `llama3.2:3b`. api_key is a required-but-unused dummy.
 llm:
-  provider: mock
-  model: openai/gpt-4o-mini
-  base_url: http://localhost:4000
-  api_key: not-needed-for-local-litellm
+  provider: openai
+  model: llama3.2:3b
+  base_url: http://localhost:11434/v1
+  api_key: ollama
   mock_reply_template: "You said: {user} Can you tell me more about that?"
 
 tts:
-  provider: mock
+  provider: piper
   voice: en_US-lessac-medium
 
 pipeline:
