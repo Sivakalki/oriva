@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatCountdown } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import { useCall } from "@/pages/call/useCall"
+import { useCountdown } from "@/pages/call/useCountdown"
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
@@ -23,6 +25,7 @@ export function Call() {
   const q = useJoinStatus(token)
   const wsUrl = q.data ? `${q.data.ai_ws_url}?token=${encodeURIComponent(token)}` : ""
   const { state, start, end, cleanup } = useCall(wsUrl)
+  const remainingSeconds = useCountdown(q.data?.duration_minutes ?? 30, state.phase === "live")
 
   const transcriptRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -128,7 +131,18 @@ export function Call() {
     <Frame>
       <CardHeader className="flex-row items-center justify-between">
         <CardTitle className="text-base">{s.job_title}</CardTitle>
-        <Badge variant={status.variant}>{status.label}</Badge>
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "font-mono text-sm tabular-nums",
+              remainingSeconds <= 60 ? "text-destructive" : "text-muted-foreground",
+            )}
+            aria-label="Time remaining"
+          >
+            {formatCountdown(remainingSeconds)}
+          </span>
+          <Badge variant={status.variant}>{status.label}</Badge>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div

@@ -84,7 +84,7 @@ export function InterviewDetail() {
       <div>
         <h1 className="text-2xl font-semibold">{iv.candidate.name}</h1>
         <p className="text-muted-foreground">
-          {iv.job.title} · {fmtDateTime(iv.scheduled_at)}
+          {iv.job.title} · {fmtDateTime(iv.scheduled_at)} · {iv.duration_minutes} min
         </p>
       </div>
 

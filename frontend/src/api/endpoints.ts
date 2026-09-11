@@ -47,6 +47,7 @@ export const scheduleInterview = (input: {
   job_id: string
   candidate_id: string
   scheduled_at: string
+  duration_minutes?: number
 }) => apiFetch<InterviewDetail>("/interviews", { method: "POST", json: input })
 
 export const advanceState = (id: string, to_state: string, reason: string) =>

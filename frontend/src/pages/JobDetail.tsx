@@ -32,9 +32,16 @@ export function JobDetail() {
   const [name, setName] = useState("")
   const [resume, setResume] = useState("")
   const [when, setWhen] = useState("")
+  const [durationMinutes, setDurationMinutes] = useState(30)
 
   const canSubmit =
-    email.trim() && name.trim() && when && new Date(when) > new Date() && !createCandidate.isPending
+    email.trim() &&
+    name.trim() &&
+    when &&
+    new Date(when) > new Date() &&
+    durationMinutes >= 5 &&
+    durationMinutes <= 120 &&
+    !createCandidate.isPending
 
   const submit = async () => {
     try {
@@ -47,6 +54,7 @@ export function JobDetail() {
         job_id: id,
         candidate_id: candidate.id,
         scheduled_at: toRFC3339(when),
+        duration_minutes: durationMinutes,
       })
       toast.success(`Scheduled — invite emailed to ${candidate.email}`)
       setOpen(false)
@@ -54,6 +62,7 @@ export function JobDetail() {
       setName("")
       setResume("")
       setWhen("")
+      setDurationMinutes(30)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to add candidate")
     }
@@ -114,6 +123,17 @@ export function JobDetail() {
                     type="datetime-local"
                     value={when}
                     onChange={(e) => setWhen(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="duration">Interview length (minutes)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    min={5}
+                    max={120}
+                    value={durationMinutes}
+                    onChange={(e) => setDurationMinutes(Number(e.target.value))}
                   />
                 </div>
                 <div className="flex justify-end gap-2">

@@ -56,6 +56,7 @@ export interface InterviewDetail {
   state: string
   state_label: string
   scheduled_at: string
+  duration_minutes: number
   job: JobRef
   candidate: CandRef
   created_at: string
@@ -81,6 +82,7 @@ export interface JoinStatus {
   late_by_seconds: number
   session_id: string
   ai_ws_url: string
+  duration_minutes: number
 }
 
 export interface ListResponse<T> {

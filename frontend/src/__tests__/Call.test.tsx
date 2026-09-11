@@ -63,6 +63,7 @@ const open: Partial<JoinStatus> = {
   scheduled_at: "2099-01-01T10:00:00Z",
   server_now: "2099-01-01T10:00:00Z",
   late_by_seconds: 0,
+  duration_minutes: 5,
 }
 
 describe("Call page", () => {
@@ -104,6 +105,15 @@ describe("Call page", () => {
 
     expect(await screen.findByText(/Tell me about a project/i)).toBeInTheDocument()
     expect(screen.getByText(/I built a payments system/i)).toBeInTheDocument()
+  })
+
+  it("shows a countdown from the interview's duration once connected", async () => {
+    mockJoin(open)
+    renderCall()
+    await userEvent.click(await screen.findByRole("button", { name: /start interview/i }))
+    await act(async () => lastCallbacks.onConnected?.())
+
+    expect(await screen.findByLabelText(/time remaining/i)).toHaveTextContent("5:00")
   })
 
   it("shows a mic-permission error when getUserMedia is denied", async () => {
