@@ -6,9 +6,9 @@ import (
 	"errors"
 	"strings"
 
-	"oriva/backend-go/db/postgres"
 	apxerrors "oriva/backend-go/errors"
 	"oriva/backend-go/models/job"
+	"oriva/backend-go/repositories/postgres"
 )
 
 const (

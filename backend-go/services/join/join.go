@@ -7,8 +7,9 @@ import (
 	"errors"
 	"time"
 
-	"oriva/backend-go/db/postgres"
 	apxerrors "oriva/backend-go/errors"
+	"oriva/backend-go/repositories/postgres"
+	"oriva/backend-go/repositories/postgres/interview_repo"
 )
 
 // Grace is how long after the scheduled time a candidate is still "open"
@@ -16,7 +17,7 @@ import (
 const Grace = 15 * time.Minute
 
 type repo interface {
-	JoinByToken(ctx context.Context, token string) (*postgres.JoinInfo, error)
+	JoinByToken(ctx context.Context, token string) (*interview_repo.JoinInfo, error)
 }
 
 // Service resolves join tokens.
@@ -28,7 +29,13 @@ type Service struct {
 
 // NewService constructs a join Service.
 func NewService(r repo, aiWsURL string) *Service {
-	return &Service{repo: r, aiWsURL: aiWsURL, now: time.Now}
+	return NewServiceWithClock(r, aiWsURL, time.Now)
+}
+
+// NewServiceWithClock constructs a join Service with an injectable clock
+// (tests use this to control "now" without needing package-internal access).
+func NewServiceWithClock(r repo, aiWsURL string, now func() time.Time) *Service {
+	return &Service{repo: r, aiWsURL: aiWsURL, now: now}
 }
 
 // Phase values.

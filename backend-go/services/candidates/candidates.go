@@ -7,9 +7,9 @@ import (
 	"net/mail"
 	"strings"
 
-	"oriva/backend-go/db/postgres"
 	apxerrors "oriva/backend-go/errors"
 	"oriva/backend-go/models/candidate"
+	"oriva/backend-go/repositories/postgres"
 )
 
 const (

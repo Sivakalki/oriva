@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"oriva/backend-go/db/postgres"
 	"oriva/backend-go/models/interview"
+	"oriva/backend-go/repositories/postgres"
+	"oriva/backend-go/repositories/postgres/interview_repo"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -18,7 +19,7 @@ const SchemaVersion = "oriva.tools.v1"
 
 type interviewReader interface {
 	OrgOf(ctx context.Context, sessionID string) (string, error)
-	PlanData(ctx context.Context, orgID, sessionID string) (*postgres.PlanData, error)
+	PlanData(ctx context.Context, orgID, sessionID string) (*interview_repo.PlanData, error)
 }
 
 type responseRecorder interface {

@@ -5,9 +5,9 @@ import (
 	"context"
 	"errors"
 
-	"oriva/backend-go/db/postgres"
 	apxerrors "oriva/backend-go/errors"
 	"oriva/backend-go/models/interview"
+	"oriva/backend-go/repositories/postgres"
 	"oriva/backend-go/statemachine"
 )
 

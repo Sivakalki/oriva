@@ -8,11 +8,17 @@ import (
 	"syscall"
 
 	"oriva/backend-go/config"
-	"oriva/backend-go/db/postgres"
 	apxhttp "oriva/backend-go/http"
 	"oriva/backend-go/http/handlers"
 	orivamcp "oriva/backend-go/mcp"
-	"oriva/backend-go/notify"
+	"oriva/backend-go/repositories/notifications/email_repo"
+	"oriva/backend-go/repositories/postgres"
+	"oriva/backend-go/repositories/postgres/candidate_repo"
+	"oriva/backend-go/repositories/postgres/interview_repo"
+	"oriva/backend-go/repositories/postgres/job_repo"
+	"oriva/backend-go/repositories/postgres/response_repo"
+	"oriva/backend-go/repositories/postgres/state_repo"
+	"oriva/backend-go/repositories/postgres/user_repo"
 	"oriva/backend-go/services/auth"
 	"oriva/backend-go/services/candidates"
 	"oriva/backend-go/services/health"
@@ -90,7 +96,7 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 		}
 	}
 
-	states, transitions, err := postgres.LoadGraph(ctx, pool)
+	states, transitions, err := state_repo.LoadGraph(ctx, pool)
 	if err != nil {
 		return nil, err
 	}
@@ -102,14 +108,14 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 
 	jwtSvc := jwt.New(cfg.Auth.JWTSecret, cfg.Auth.AccessTTLDur)
 
-	userRepo := postgres.NewUserRepo(pool)
-	jobRepo := postgres.NewJobRepo(pool)
-	candRepo := postgres.NewCandidateRepo(pool)
-	interviewRepo := postgres.NewInterviewRepo(pool)
+	userRepo := user_repo.New(pool)
+	jobRepo := job_repo.New(pool)
+	candRepo := candidate_repo.New(pool)
+	interviewRepo := interview_repo.New(pool)
 
 	sessionsSvc := sessions.NewService(interviewRepo, machine)
 
-	notifier, err := notify.NewSender(cfg.Notify, logger)
+	notifier, err := email_repo.NewSender(cfg.Notify, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +136,7 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 	if cfg.MCP.Enabled {
 		mcpSrv := orivamcp.NewServer(orivamcp.Deps{
 			Interviews: interviewRepo,
-			Responses:  postgres.NewResponseRepo(pool),
+			Responses:  response_repo.New(pool),
 			Sessions:   sessionsSvc,
 			Logger:     logger,
 		})

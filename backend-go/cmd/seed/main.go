@@ -15,7 +15,9 @@ import (
 	"time"
 
 	"oriva/backend-go/config"
-	"oriva/backend-go/db/postgres"
+	"oriva/backend-go/repositories/postgres"
+	"oriva/backend-go/repositories/postgres/org_repo"
+	"oriva/backend-go/repositories/postgres/user_repo"
 	"oriva/backend-go/utils/helpers"
 	"oriva/backend-go/utils/jwt"
 
@@ -50,7 +52,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	orgID, err := postgres.NewOrgRepo(pool).UpsertByName(ctx, orgName)
+	orgID, err := org_repo.New(pool).UpsertByName(ctx, orgName)
 	if err != nil {
 		log.Fatalf("upsert org: %v", err)
 	}
@@ -60,7 +62,7 @@ func main() {
 		log.Fatalf("hash password: %v", err)
 	}
 
-	u, err := postgres.NewUserRepo(pool).Upsert(ctx, orgID, email, hash, jwt.RoleScheduler)
+	u, err := user_repo.New(pool).Upsert(ctx, orgID, email, hash, jwt.RoleScheduler)
 	if err != nil {
 		log.Fatalf("upsert user: %v", err)
 	}

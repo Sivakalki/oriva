@@ -28,7 +28,7 @@ postgres:
   auto_migrate: false
 
 auth:
-  jwt_secret: "dev-insecure-secret-change-me"
+  jwt_secret: "asdfnaasdfaeradfaerg"
   access_ttl: "1h"
   bcrypt_cost: 12
 

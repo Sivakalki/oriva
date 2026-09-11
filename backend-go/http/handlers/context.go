@@ -15,9 +15,9 @@ func listEnvelope[T any](items []T) map[string]any {
 	return map[string]any{"data": items}
 }
 
-// orgID returns the caller's organization id from the JWT claims, or an
+// OrgID returns the caller's organization id from the JWT claims, or an
 // Unauthorized error if the request is somehow unauthenticated.
-func orgID(r *http.Request) (string, error) {
+func OrgID(r *http.Request) (string, error) {
 	claims, ok := authctx.FromContext(r.Context())
 	if !ok || claims.OrgID == "" {
 		return "", &apxerrors.Error{Kind: apxerrors.Unauthorized, Message: "unauthorized"}

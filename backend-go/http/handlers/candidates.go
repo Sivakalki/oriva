@@ -38,7 +38,7 @@ type candUpdateBody struct {
 
 // Create handles POST /candidates.
 func (h *Candidates) Create(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -57,7 +57,7 @@ func (h *Candidates) Create(w http.ResponseWriter, r *http.Request) (any, int, e
 
 // List handles GET /candidates.
 func (h *Candidates) List(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -70,7 +70,7 @@ func (h *Candidates) List(w http.ResponseWriter, r *http.Request) (any, int, err
 
 // Get handles GET /candidates/{id}.
 func (h *Candidates) Get(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -83,7 +83,7 @@ func (h *Candidates) Get(w http.ResponseWriter, r *http.Request) (any, int, erro
 
 // Update handles PATCH /candidates/{id}.
 func (h *Candidates) Update(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}

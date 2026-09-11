@@ -17,7 +17,7 @@ import (
 	"strconv"
 
 	"oriva/backend-go/config"
-	"oriva/backend-go/db/postgres"
+	"oriva/backend-go/repositories/postgres"
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"

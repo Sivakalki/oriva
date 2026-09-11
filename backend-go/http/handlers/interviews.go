@@ -42,7 +42,7 @@ type scheduleBody struct {
 
 // Schedule handles POST /interviews.
 func (h *Interviews) Schedule(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -61,7 +61,7 @@ func (h *Interviews) Schedule(w http.ResponseWriter, r *http.Request) (any, int,
 
 // List handles GET /interviews with optional ?state= ?job_id= ?candidate_id=.
 func (h *Interviews) List(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -85,7 +85,7 @@ type advanceBody struct {
 
 // Advance handles POST /interviews/{id}/advance.
 func (h *Interviews) Advance(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -108,7 +108,7 @@ func (h *Interviews) Advance(w http.ResponseWriter, r *http.Request) (any, int, 
 
 // Get handles GET /interviews/{id}.
 func (h *Interviews) Get(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -6,12 +6,12 @@ import (
 	"errors"
 	"time"
 
-	"oriva/backend-go/db/postgres"
 	apxerrors "oriva/backend-go/errors"
-	"oriva/backend-go/jointoken"
 	"oriva/backend-go/models/candidate"
 	"oriva/backend-go/models/interview"
-	"oriva/backend-go/notify"
+	"oriva/backend-go/repositories/notifications/email_repo"
+	"oriva/backend-go/repositories/postgres"
+	"oriva/backend-go/utils/helpers"
 
 	"go.uber.org/zap"
 )
@@ -37,7 +37,7 @@ type Service struct {
 	repo     interviewRepo
 	jobs     jobChecker
 	cands    candReader
-	notifier notify.Sender
+	notifier email_repo.Sender
 	baseURL  string
 	logger   *zap.Logger
 	now      func() time.Time
@@ -46,7 +46,7 @@ type Service struct {
 // NewService constructs an interviews Service.
 func NewService(
 	r interviewRepo, jobs jobChecker, cands candReader,
-	notifier notify.Sender, baseURL string, logger *zap.Logger,
+	notifier email_repo.Sender, baseURL string, logger *zap.Logger,
 ) *Service {
 	return &Service{
 		repo: r, jobs: jobs, cands: cands, notifier: notifier,
@@ -92,7 +92,7 @@ func (s *Service) Schedule(ctx context.Context, orgID string, in ScheduleInput) 
 		return nil, apxerrors.E(apxerrors.NotFound, "candidate not found")
 	}
 
-	token := jointoken.New()
+	token := helpers.NewJoinToken()
 	id, err := s.repo.Schedule(ctx, orgID, in.JobID, in.CandidateID, token, at.UTC())
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (s *Service) sendInvite(ctx context.Context, orgID, candidateID string, d *
 		s.logger.Warn("invite: candidate lookup failed", zap.Error(err))
 		return
 	}
-	email := notify.InviteEmail(c.Email, c.Name, d.Job.Title, d.JoinURL, at)
+	email := email_repo.InviteEmail(c.Email, c.Name, d.Job.Title, d.JoinURL, at)
 	if err := s.notifier.Send(ctx, email); err != nil {
 		s.logger.Warn("invite: send failed", zap.String("to", c.Email), zap.Error(err))
 	}

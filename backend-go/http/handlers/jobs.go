@@ -37,7 +37,7 @@ type jobUpdateBody struct {
 
 // Create handles POST /jobs.
 func (h *Jobs) Create(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -54,7 +54,7 @@ func (h *Jobs) Create(w http.ResponseWriter, r *http.Request) (any, int, error) 
 
 // List handles GET /jobs.
 func (h *Jobs) List(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -67,7 +67,7 @@ func (h *Jobs) List(w http.ResponseWriter, r *http.Request) (any, int, error) {
 
 // Get handles GET /jobs/{id}.
 func (h *Jobs) Get(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -80,7 +80,7 @@ func (h *Jobs) Get(w http.ResponseWriter, r *http.Request) (any, int, error) {
 
 // Update handles PATCH /jobs/{id}.
 func (h *Jobs) Update(w http.ResponseWriter, r *http.Request) (any, int, error) {
-	org, err := orgID(r)
+	org, err := OrgID(r)
 	if err != nil {
 		return nil, 0, err
 	}
