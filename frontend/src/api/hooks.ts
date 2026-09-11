@@ -3,11 +3,23 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import * as api from "./endpoints"
 
 export const useJobs = () => useQuery({ queryKey: ["jobs"], queryFn: api.listJobs })
+export const useJob = (id: string) =>
+  useQuery({ queryKey: ["job", id], queryFn: () => api.getJob(id), enabled: !!id })
 export const useCandidates = () =>
   useQuery({ queryKey: ["candidates"], queryFn: api.listCandidates })
 
 export const useInterviews = (state?: string) =>
-  useQuery({ queryKey: ["interviews", state ?? "all"], queryFn: () => api.listInterviews(state) })
+  useQuery({
+    queryKey: ["interviews", state ?? "all"],
+    queryFn: () => api.listInterviews({ state }),
+  })
+
+export const useInterviewsByJob = (jobId: string) =>
+  useQuery({
+    queryKey: ["interviews", "by-job", jobId],
+    queryFn: () => api.listInterviews({ job_id: jobId }),
+    enabled: !!jobId,
+  })
 
 export const useInterview = (id: string) =>
   useQuery({ queryKey: ["interview", id], queryFn: () => api.getInterview(id) })

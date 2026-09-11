@@ -6,6 +6,7 @@ import { Call } from "@/pages/Call"
 import { Candidates } from "@/pages/Candidates"
 import { Dashboard } from "@/pages/Dashboard"
 import { InterviewDetail } from "@/pages/InterviewDetail"
+import { JobDetail } from "@/pages/JobDetail"
 import { Jobs } from "@/pages/Jobs"
 import { Join } from "@/pages/Join"
 import { Login } from "@/pages/Login"
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Dashboard /> },
           { path: "jobs", element: <Jobs /> },
+          { path: "jobs/:id", element: <JobDetail /> },
           { path: "candidates", element: <Candidates /> },
           { path: "schedule", element: <ScheduleInterview /> },
           { path: "interviews/:id", element: <InterviewDetail /> },

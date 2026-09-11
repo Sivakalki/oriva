@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "react-router-dom"
 import { toast } from "sonner"
 
 import { useCreateJob, useJobs } from "@/api/hooks"
@@ -87,7 +88,11 @@ export function Jobs() {
           <TableBody>
             {(jobs.data ?? []).map((j) => (
               <TableRow key={j.id}>
-                <TableCell className="font-medium">{j.title}</TableCell>
+                <TableCell className="font-medium">
+                  <Link to={`/jobs/${j.id}`} className="hover:underline">
+                    {j.title}
+                  </Link>
+                </TableCell>
                 <TableCell className="max-w-md truncate text-muted-foreground">
                   {j.description || "—"}
                 </TableCell>

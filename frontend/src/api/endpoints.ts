@@ -20,6 +20,7 @@ export const me = () =>
 
 // --- jobs ---
 export const listJobs = () => apiFetch<ListResponse<Job>>("/jobs").then((r) => r.data)
+export const getJob = (id: string) => apiFetch<Job>(`/jobs/${id}`)
 export const createJob = (title: string, description: string) =>
   apiFetch<Job>("/jobs", { method: "POST", json: { title, description } })
 
@@ -30,10 +31,15 @@ export const createCandidate = (email: string, name: string, resume_text: string
   apiFetch<Candidate>("/candidates", { method: "POST", json: { email, name, resume_text } })
 
 // --- interviews ---
-export const listInterviews = (state?: string) =>
-  apiFetch<ListResponse<InterviewDetail>>(
-    `/interviews${state ? `?state=${encodeURIComponent(state)}` : ""}`,
-  ).then((r) => r.data)
+export const listInterviews = (filter?: { state?: string; job_id?: string }) => {
+  const params = new URLSearchParams()
+  if (filter?.state) params.set("state", filter.state)
+  if (filter?.job_id) params.set("job_id", filter.job_id)
+  const qs = params.toString()
+  return apiFetch<ListResponse<InterviewDetail>>(`/interviews${qs ? `?${qs}` : ""}`).then(
+    (r) => r.data,
+  )
+}
 
 export const getInterview = (id: string) => apiFetch<InterviewDetail>(`/interviews/${id}`)
 
