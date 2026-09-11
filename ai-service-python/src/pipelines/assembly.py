@@ -19,6 +19,7 @@ from pipecat.transports.base_transport import BaseTransport
 
 from config import Settings
 from pipelines.context import interview_context
+from pipelines.context_compactor import ContextCompactionTrigger, ContextCompactor
 from pipelines.mcp_tools import build_mcp_client, load_tools
 from pipelines.providers import build_llm, build_stt, build_tts
 from telemetry.observer import MetricsObserver
@@ -42,6 +43,7 @@ class PipelineBuild:
 
             user_params.vad_analyzer = SileroVADAnalyzer()
         aggregators = LLMContextAggregatorPair(self.context, user_params=user_params)
+        compactor = ContextCompactor(self.context, self.settings)
         pipeline = Pipeline(
             [
                 transport.input(),
@@ -51,6 +53,10 @@ class PipelineBuild:
                 self.tts,
                 transport.output(),
                 aggregators.assistant(),
+                # After the assistant's reply is committed to context: check
+                # whether it's grown past pipeline.context_compress_words and,
+                # if so, compress it in the background (never blocks here).
+                ContextCompactionTrigger(compactor),
             ]
         )
         observer = MetricsObserver(

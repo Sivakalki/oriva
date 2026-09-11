@@ -47,6 +47,10 @@ pipeline:
   greeting: "Hi, thanks for joining. Let's begin when you're ready."
   sample_rate: 16000
   vad: silero   # silero | none
+  # Background context compaction (pipelines/context_compactor.py): summarize
+  # the older half of the conversation once the live LLM context passes this
+  # many words, keeping the most recent turns verbatim. 0 disables.
+  context_compress_words: 800
 
 # Python holds its own read-only connection for speculative pgvector retrieval
 # only. All writes go through the Go MCP boundary (docs/ARCHITECTURE.md 2).

@@ -55,6 +55,65 @@
       "targets": [
         { "expr": "oriva_bakeoff_v2v_ms_p95", "legendFormat": "{{combo}}" }
       ]
+    },
+    {
+      "id": 6,
+      "title": "Per-turn answer score (p50 / p95) — backend-go",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "targets": [
+        { "expr": "histogram_quantile(0.5, sum by (le) (rate(oriva_turn_score_bucket[15m])))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(oriva_turn_score_bucket[15m])))", "legendFormat": "p95" }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Overall interview score (p50 / p95) — backend-go",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "targets": [
+        { "expr": "histogram_quantile(0.5, sum by (le) (rate(oriva_overall_score_bucket[15m])))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(oriva_overall_score_bucket[15m])))", "legendFormat": "p95" }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Judge LLM latency by stage (p50 / p95) — backend-go",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "targets": [
+        { "expr": "histogram_quantile(0.5, sum by (le, stage) (rate(oriva_scoring_duration_seconds_bucket[15m])))", "legendFormat": "p50 {{stage}}" },
+        { "expr": "histogram_quantile(0.95, sum by (le, stage) (rate(oriva_scoring_duration_seconds_bucket[15m])))", "legendFormat": "p95 {{stage}}" }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Scoring errors by stage — backend-go",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "targets": [
+        { "expr": "sum by (stage) (rate(oriva_scoring_errors_total[15m]))", "legendFormat": "{{stage}}" }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Interview context size, words (p50 / p95) — ai-service",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
+      "targets": [
+        { "expr": "histogram_quantile(0.5, sum by (le) (rate(oriva_context_words_bucket[15m])))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(oriva_context_words_bucket[15m])))", "legendFormat": "p95" }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Context compactions — ai-service",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 },
+      "targets": [
+        { "expr": "rate(oriva_context_compressions_total[15m])", "legendFormat": "compactions/s" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(oriva_context_compress_seconds_bucket[15m])))", "legendFormat": "p95 duration (s)" }
+      ]
     }
   ]
 }

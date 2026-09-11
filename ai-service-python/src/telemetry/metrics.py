@@ -44,3 +44,25 @@ PIPELINE_ERRORS = Counter(
     "Pipeline errors by stage.",
     ["stage"],
 )
+
+# Context compaction (pipelines/context_compactor.py, docs/PLAN.md Phase 2):
+# a long interview's LLM context is summarized in the background once it
+# passes pipeline.context_compress_words, so it doesn't grow unbounded.
+# A Histogram (not a Gauge) because multiple sessions can be live at once --
+# a single unlabeled Gauge would just show whichever session checked last.
+CONTEXT_WORDS = Histogram(
+    "oriva_context_words",
+    "Word count of a session's LLM context, sampled after every assistant turn.",
+    buckets=(50, 150, 300, 500, 800, 1200, 2000, 3000, 5000),
+)
+
+CONTEXT_COMPRESSIONS = Counter(
+    "oriva_context_compressions_total",
+    "Number of times a session's context was compressed.",
+)
+
+CONTEXT_COMPRESS_SECONDS = Histogram(
+    "oriva_context_compress_seconds",
+    "Wall-clock time to compress one session's context (runs in the background).",
+    buckets=(0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 15.0),
+)

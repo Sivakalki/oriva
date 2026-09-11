@@ -86,6 +86,10 @@ class PipelineConfig(BaseModel):
     greeting: str = "Hi, thanks for joining. Let's begin when you're ready."
     sample_rate: int = 16000
     vad: Literal["silero", "none"] = "silero"
+    # Background context compaction (pipelines/context_compactor.py): once
+    # the live LLM context passes this many words, it's summarized in the
+    # background so it doesn't grow unbounded over a long interview. 0 disables.
+    context_compress_words: int = 800
 
 
 class PostgresConfig(BaseModel):

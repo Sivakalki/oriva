@@ -7,6 +7,13 @@ scrape_configs:
     static_configs:
       - targets: ["host.docker.internal:8090"]
 
+  # backend-go (/metrics): request-duration histograms plus the scoring
+  # metrics (oriva_turn_score, oriva_overall_score, oriva_scoring_*) --
+  # scoring runs in Go (services/scoring), see docs/PLAN.md Phase 2.
+  - job_name: oriva-backend
+    static_configs:
+      - targets: ["host.docker.internal:8080"]
+
   # Bake-off runs pushed via `python -m bakeoff --push`.
   - job_name: pushgateway
     honor_labels: true
