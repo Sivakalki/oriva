@@ -15,7 +15,7 @@ from loguru import logger
 
 from config import Settings
 from pipelines.assembly import build_session_pipeline
-from pipelines.join_lookup import TokenNotFound, resolve_token
+from pipelines.join_lookup import TokenNotFound, resolve_token, start_session
 from pipelines.runner import PipelineSession
 from transport.websocket import build_transport
 
@@ -61,6 +61,17 @@ async def handle_ws_connection(websocket: WebSocket, settings: Settings) -> None
     session_id = await _resolve_session_id(websocket, settings, token, session_id)
     if session_id is None:
         return
+
+    if token:
+        # Best-effort: drive the session's state machine to "in_progress" now
+        # that the call is actually starting. Never blocks or fails the call
+        # on a transient backend hiccup — a stuck state just means a later
+        # refresh of the candidate's join page mis-reports the phase, which
+        # is recoverable, whereas dropping the call over this would not be.
+        try:
+            await start_session(settings.backend.base_url, token)
+        except Exception as exc:  # noqa: BLE001 — backend unreachable etc.
+            logger.warning("join session start failed | token={} error={}", token, exc)
 
     await websocket.accept()
     build = await build_session_pipeline(settings, session_id)

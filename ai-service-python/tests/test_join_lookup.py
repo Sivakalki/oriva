@@ -5,7 +5,7 @@ from collections.abc import Callable
 import httpx
 import pytest
 
-from pipelines.join_lookup import TokenNotFound, resolve_token
+from pipelines.join_lookup import TokenNotFound, resolve_token, start_session
 
 Handler = Callable[[httpx.Request], httpx.Response]
 
@@ -30,3 +30,20 @@ async def test_resolve_404() -> None:
 
     with pytest.raises(TokenNotFound):
         await resolve_token("http://backend:8080", "nope", client_factory=factory(handler))
+
+
+async def test_start_session_ok() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/api/v1/join/tok-123/start"
+        return httpx.Response(200, json={"started": True})
+
+    await start_session("http://backend:8080", "tok-123", client_factory=factory(handler))
+
+
+async def test_start_session_404() -> None:
+    def handler(_r: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, json={"message": "invalid or expired interview link"})
+
+    with pytest.raises(TokenNotFound):
+        await start_session("http://backend:8080", "nope", client_factory=factory(handler))
