@@ -36,6 +36,21 @@ export interface CandRef {
   email: string
 }
 
+export interface TurnScore {
+  turn_index: number
+  question: string
+  answer: string
+  value: number
+  rationale: string
+}
+
+export interface ScoreSummary {
+  value: number
+  rationale: string
+  model: string
+  scored_at: string
+}
+
 export interface InterviewDetail {
   id: string
   state: string
@@ -46,6 +61,9 @@ export interface InterviewDetail {
   created_at: string
   join_token?: string
   join_url?: string
+  // Recruiter-only: GET /interviews/{id} sits behind the scheduler role.
+  overall_score?: ScoreSummary
+  turn_scores?: TurnScore[]
 }
 
 export interface StateGraph {

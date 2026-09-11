@@ -4,7 +4,9 @@ import { useParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import { useAdvanceState, useInterview, useSessionStates } from "@/api/hooks"
+import type { TurnScore } from "@/api/types"
 import { StateBadge } from "@/components/StateBadge"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,6 +20,27 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { fmtDateTime } from "@/lib/format"
+
+function scoreVariant(value: number): "success" | "info" | "destructive" {
+  if (value >= 75) return "success"
+  if (value >= 50) return "info"
+  return "destructive"
+}
+
+function TurnScoreRow({ turn }: { turn: TurnScore }) {
+  return (
+    <li className="flex flex-col gap-1 border-t py-3 first:border-t-0 first:pt-0">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-medium">{turn.question}</p>
+        <Badge variant={scoreVariant(turn.value)} className="shrink-0">
+          {Math.round(turn.value)}
+        </Badge>
+      </div>
+      <p className="text-sm text-muted-foreground">{turn.answer}</p>
+      <p className="text-xs text-muted-foreground italic">{turn.rationale}</p>
+    </li>
+  )
+}
 
 export function InterviewDetail() {
   const { id = "" } = useParams()
@@ -106,6 +129,57 @@ export function InterviewDetail() {
           )}
         </CardContent>
       </Card>
+
+      {iv.overall_score ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Score
+              <Badge variant={scoreVariant(iv.overall_score.value)} className="text-sm">
+                {Math.round(iv.overall_score.value)} / 100
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <p className="text-sm text-muted-foreground">{iv.overall_score.rationale}</p>
+            <p className="text-xs text-muted-foreground">
+              Scored {fmtDateTime(iv.overall_score.scored_at)} · {iv.overall_score.model}
+            </p>
+            {iv.turn_scores && iv.turn_scores.length > 0 && (
+              <details className="text-sm">
+                <summary className="cursor-pointer font-medium text-muted-foreground">
+                  Per-answer breakdown ({iv.turn_scores.length})
+                </summary>
+                <ul className="mt-2">
+                  {iv.turn_scores.map((t) => (
+                    <TurnScoreRow key={t.turn_index} turn={t} />
+                  ))}
+                </ul>
+              </details>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        iv.turn_scores &&
+        iv.turn_scores.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Score</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <p className="text-sm text-muted-foreground">
+                Scoring in progress — {iv.turn_scores.length} answer
+                {iv.turn_scores.length === 1 ? "" : "s"} scored so far, overall score pending.
+              </p>
+              <ul>
+                {iv.turn_scores.map((t) => (
+                  <TurnScoreRow key={t.turn_index} turn={t} />
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )
+      )}
 
       <Card>
         <CardHeader>
