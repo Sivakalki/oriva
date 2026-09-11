@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from oriva_ai.config import Settings
-from oriva_ai.harness.clip_run import run_clip
+from config import Settings
+from harness.clip_run import run_clip
 
-FIXTURE = Path("src/oriva_ai/harness/fixtures/short_answer.wav")
+FIXTURE = Path("src/harness/fixtures/short_answer.wav")
 
 
 async def test_run_clip_fills_every_field() -> None:

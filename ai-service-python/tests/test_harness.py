@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from oriva_ai.harness.run_clip import main
+from harness.run_clip import main
 
 
 def test_run_clip_on_fixture(capsys) -> None:  # type: ignore[no-untyped-def]
-    rc = main(["src/oriva_ai/harness/fixtures/short_answer.wav"])
+    rc = main(["src/harness/fixtures/short_answer.wav"])
     out = capsys.readouterr().out
     assert rc == 0
     for line in (

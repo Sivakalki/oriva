@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from oriva_ai.config import Settings, get_settings, load_settings
+from config import Settings, get_settings, load_settings
 
 
 def test_defaults() -> None:

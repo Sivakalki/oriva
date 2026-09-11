@@ -5,8 +5,8 @@ import logging
 
 from loguru import logger
 
-from oriva_ai.config import LoggingConfig
-from oriva_ai.logging import setup_logging
+from config import LoggingConfig
+from log_setup import setup_logging
 
 
 def test_json_sink_emits_parseable_lines() -> None:

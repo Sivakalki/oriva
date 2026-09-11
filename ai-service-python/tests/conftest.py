@@ -5,7 +5,7 @@ import sys
 import pytest
 from loguru import logger
 
-from oriva_ai.config import Settings
+from config import Settings
 
 # Keep Pipecat's very chatty DEBUG logs out of the test output.
 logger.remove()

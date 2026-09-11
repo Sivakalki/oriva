@@ -11,7 +11,7 @@ run:
 	uv run oriva-ai
 
 dev:
-	uv run uvicorn oriva_ai.app:create_app --factory --reload --host 0.0.0.0 --port 8090
+	uv run uvicorn app:create_app --factory --reload --host 0.0.0.0 --port 8090
 
 test:
 	uv run pytest
@@ -33,7 +33,7 @@ typecheck:
 check: lint typecheck test
 
 bakeoff:
-	uv run python -m oriva_ai.bakeoff
+	uv run python -m bakeoff
 
 gen-clips:
 	uv run python tools/gen_bakeoff_clips.py

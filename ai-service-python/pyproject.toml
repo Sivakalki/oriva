@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
-oriva-ai = "oriva_ai.__main__:main"
+oriva-ai = "main:main"
 
 [dependency-groups]
 dev = [
@@ -33,8 +33,17 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/oriva_ai"]
-artifacts = ["src/oriva_ai/**/*.yaml", "src/oriva_ai/**/*.wav"]
+# Flat src/ layout (no oriva_ai wrapper package): every top-level dir under
+# src/ becomes a top-level importable package (api, pipelines, transport,
+# telemetry, bakeoff, harness); loose top-level modules are listed in
+# `include`. The `sources` mapping below strips the "src/" prefix so
+# `src/api/...` ships as `api/...`, importable as `import api`.
+packages = ["src/api", "src/pipelines", "src/transport", "src/telemetry", "src/bakeoff", "src/harness"]
+include = ["src/app.py", "src/main.py", "src/config.py", "src/log_setup.py"]
+artifacts = ["src/**/*.yaml", "src/**/*.wav"]
+
+[tool.hatch.build.targets.wheel.sources]
+src = ""
 
 [tool.ruff]
 line-length = 100
@@ -52,6 +61,7 @@ explicit_package_bases = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+pythonpath = ["src"]
 markers = [
     "integration: talks to a running backend-go MCP server (needs ORIVA_GO_MCP_URL)",
 ]

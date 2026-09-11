@@ -12,8 +12,8 @@ from pipecat.observers.base_observer import FramePushed
 from pipecat.processors.frame_processor import FrameDirection
 from prometheus_client import REGISTRY
 
-from oriva_ai.config import Settings
-from oriva_ai.telemetry.observer import MetricsObserver
+from config import Settings
+from telemetry.observer import MetricsObserver
 
 
 def _count(metric: str, **labels: str) -> float:

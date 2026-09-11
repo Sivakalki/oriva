@@ -4,7 +4,7 @@
 
 These tone-sweep clips exist so the harness runs end to end with no recordings.
 Replace them with real candidate-answer recordings: drop `*.wav` into
-`src/oriva_ai/bakeoff/clips/` and add manifest rows with the true transcript and
+`src/bakeoff/clips/` and add manifest rows with the true transcript and
 tags (accent / noise / length / fillers) — no code change needed.
 """
 
@@ -18,7 +18,7 @@ from pathlib import Path
 
 import yaml
 
-OUT = Path(__file__).parent.parent / "src" / "oriva_ai" / "bakeoff" / "clips"
+OUT = Path(__file__).parent.parent / "src" / "bakeoff" / "clips"
 RATE = 16000
 
 CLIPS = [

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from oriva_ai.bakeoff.metrics import aggregate, normalize, word_error_rate
-from oriva_ai.harness.clip_run import ClipResult
+from bakeoff.metrics import aggregate, normalize, word_error_rate
+from harness.clip_run import ClipResult
 
 
 def test_normalize_strips_punct_and_case() -> None:

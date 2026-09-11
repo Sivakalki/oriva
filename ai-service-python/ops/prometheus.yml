@@ -7,7 +7,7 @@ scrape_configs:
     static_configs:
       - targets: ["host.docker.internal:8090"]
 
-  # Bake-off runs pushed via `python -m oriva_ai.bakeoff --push`.
+  # Bake-off runs pushed via `python -m bakeoff --push`.
   - job_name: pushgateway
     honor_labels: true
     static_configs:

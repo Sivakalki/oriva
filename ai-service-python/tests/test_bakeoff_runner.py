@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from oriva_ai.bakeoff import report, runner
+from bakeoff import report, runner
 
-CLIPS_DIR = Path("src/oriva_ai/bakeoff/clips")
+CLIPS_DIR = Path("src/bakeoff/clips")
 CLIPS = [
     {"id": "clean_short", "file": "clean_short.wav", "reference_transcript": "I have five years"},
     {"id": "noisy_short", "file": "noisy_short.wav", "reference_transcript": "I prefer go"},
@@ -28,7 +28,7 @@ async def test_run_matrix_all_mock() -> None:
 
 
 async def test_run_matrix_unavailable_provider(monkeypatch: pytest.MonkeyPatch) -> None:
-    from oriva_ai.pipeline.providers import registry
+    from pipelines.providers import registry
 
     def boom(_cfg: object) -> object:
         raise ModuleNotFoundError("No module named 'faster_whisper'")

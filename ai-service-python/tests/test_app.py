@@ -6,8 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from oriva_ai.app import create_app
-from oriva_ai.config import Settings
+from app import create_app
+from config import Settings
 
 
 def test_health(settings: Settings) -> None:
@@ -67,12 +67,12 @@ def test_ws_requires_session_id_when_mcp_enabled(settings: Settings) -> None:
 def test_ws_token_closed_phase_rejected(
     settings: Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from oriva_ai.pipeline.join_lookup import Resolved
+    from pipelines.join_lookup import Resolved
 
     async def fake_resolve(_base: str, _token: str) -> Resolved:
         return Resolved(session_id="s1", phase="closed")
 
-    monkeypatch.setattr("oriva_ai.transport.websocket.resolve_token", fake_resolve)
+    monkeypatch.setattr("transport.websocket.resolve_token", fake_resolve)
     with TestClient(create_app(settings)) as client:
         with pytest.raises(WebSocketDisconnect) as exc:
             with client.websocket_connect("/ws?token=whatever"):
@@ -81,12 +81,12 @@ def test_ws_token_closed_phase_rejected(
 
 
 def test_ws_token_invalid_rejected(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
-    from oriva_ai.pipeline.join_lookup import TokenNotFound
+    from pipelines.join_lookup import TokenNotFound
 
     async def fake_resolve(_base: str, _token: str) -> object:
         raise TokenNotFound("nope")
 
-    monkeypatch.setattr("oriva_ai.transport.websocket.resolve_token", fake_resolve)
+    monkeypatch.setattr("transport.websocket.resolve_token", fake_resolve)
     with TestClient(create_app(settings)) as client:
         with pytest.raises(WebSocketDisconnect) as exc:
             with client.websocket_connect("/ws?token=nope"):

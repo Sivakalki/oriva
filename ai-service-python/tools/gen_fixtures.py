@@ -10,7 +10,7 @@ import struct
 import wave
 from pathlib import Path
 
-OUT = Path(__file__).parent.parent / "src" / "oriva_ai" / "harness" / "fixtures"
+OUT = Path(__file__).parent.parent / "src" / "harness" / "fixtures"
 RATE = 16000
 
 

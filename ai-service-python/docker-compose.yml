@@ -1,7 +1,7 @@
 # Local observability for the bake-off (docs/PLAN.md Phase 1 step 2).
 #   make obs-up      # Prometheus :9090, Grafana :3000, Pushgateway :9091
 # Prometheus scrapes the running ai-service (/metrics on the host :8090) and the
-# pushgateway (bake-off runs pushed with `python -m oriva_ai.bakeoff --push`).
+# pushgateway (bake-off runs pushed with `python -m bakeoff --push`).
 
 services:
   prometheus:

@@ -5,7 +5,7 @@ from collections.abc import Callable
 import httpx
 import pytest
 
-from oriva_ai.pipeline.join_lookup import TokenNotFound, resolve_token
+from pipelines.join_lookup import TokenNotFound, resolve_token
 
 Handler = Callable[[httpx.Request], httpx.Response]
 

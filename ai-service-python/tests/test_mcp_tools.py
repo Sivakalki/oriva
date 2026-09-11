@@ -4,8 +4,8 @@ import os
 
 import pytest
 
-from oriva_ai.config import MCPConfig
-from oriva_ai.pipeline.mcp_tools import SESSION_TOOLS, build_mcp_client, load_tools
+from config import MCPConfig
+from pipelines.mcp_tools import SESSION_TOOLS, build_mcp_client, load_tools
 
 
 def test_session_tools_match_go_surface() -> None:

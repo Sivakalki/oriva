@@ -27,7 +27,7 @@ dev default) needs no API keys or models. Real providers (`whisper`, `openai` /
 ```bash
 uv run oriva-ai                       # /ws?session_id=<id> pipeline endpoint on :8090
 # offline: run one clip through the pipeline and print stage latencies
-uv run python -m oriva_ai.harness.run_clip src/oriva_ai/harness/fixtures/short_answer.wav
+uv run python -m harness.run_clip src/harness/fixtures/short_answer.wav
 ```
 
 ## MCP tools
@@ -50,7 +50,7 @@ Score STT/LLM/TTS combinations (`bakeoff/combos.yaml`) over the fixed clip set
 ```bash
 make bakeoff                              # writes bakeoff/out/{results.csv,results.json}
 make obs-up                               # Prometheus :9090, Grafana :3000, Pushgateway :9091
-uv run python -m oriva_ai.bakeoff --push  # push aggregates to Grafana
+uv run python -m bakeoff --push           # push aggregates to Grafana
 ```
 
 The committed clips are synthetic; see `bakeoff/clips/README.md` to drop in real
@@ -80,17 +80,31 @@ Point at a different file with `ORIVA_AI_CONFIG_FILE=/path/to/other.yaml`.
 
 ## Layout
 
+Flat `src/` (no wrapping package): every top-level dir under `src/` is
+directly importable (`import app`, `import pipelines`, ...), mirroring
+`backend-go`'s handler → service → repo split — `api/` are the handlers,
+`pipelines/` is the service layer, `pipelines/providers/` is the repo layer
+(one subpackage per STT/LLM/TTS engine, swapped via `config.yaml`).
+
 | Path | Purpose |
 |---|---|
-| `src/oriva_ai/config.py` | `Settings` (pydantic-settings) + `load_settings()` |
-| `src/oriva_ai/logging.py` | loguru sink + stdlib-logging interception |
-| `src/oriva_ai/app.py` | FastAPI app factory (`/health`, `/metrics`, lifespan) |
-| `src/oriva_ai/telemetry/metrics.py` | Prometheus histograms for pipeline stages |
-| `src/oriva_ai/telemetry/observer.py` | times each stage boundary → the histograms |
-| `src/oriva_ai/pipeline/providers/` | provider registry: `mock` + lazy `whisper`/`openai`/`piper` |
-| `src/oriva_ai/pipeline/assembly.py` | `build_pipeline(settings)` → services + task factory |
-| `src/oriva_ai/transport/websocket.py` | `/ws` FastAPI WebSocket transport |
-| `src/oriva_ai/harness/` | offline clip runner + synthetic fixtures |
+| `src/config.py` | `Settings` (pydantic-settings) + `load_settings()` |
+| `src/log_setup.py` | loguru sink + stdlib-logging interception |
+| `src/app.py` | FastAPI app factory (mounts `api/v1`, `/ws`, lifespan) |
+| `src/api/v1/` | HTTP handlers: `health.py`, `metrics.py`, combined in `routes.py` |
+| `src/pipelines/assembly.py` | `build_pipeline(settings)` → services + task factory |
+| `src/pipelines/providers/` | one subpackage per provider (`mock/`, `whisper/`, `piper/`, `openai/`), each exposing `build_stt`/`build_llm`/`build_tts`; `registry.py` maps `config.yaml`'s `provider:` string to one |
+| `src/transport/websocket.py` | `/ws` FastAPI WebSocket transport |
+| `src/telemetry/metrics.py` | Prometheus histograms for pipeline stages |
+| `src/telemetry/observer.py` | times each stage boundary → the histograms |
+| `src/harness/` | offline clip runner + synthetic fixtures |
+| `src/bakeoff/` | provider combo-matrix runner (see Bake-off above) |
+
+Adding a new STT/LLM/TTS provider: drop a new subpackage under
+`pipelines/providers/` exposing a `build_stt`/`build_llm`/`build_tts`
+factory (import the SDK lazily inside the function, like the existing ones),
+add one line to the matching dict in `pipelines/providers/registry.py`, then
+select it via `config.yaml`'s `provider:` key — no other code changes.
 
 ## Dev
 

@@ -4,13 +4,13 @@ from pipecat.frames.frames import LLMContextFrame, LLMTextFrame, TTSAudioRawFram
 from pipecat.pipeline.task import PipelineParams
 from pipecat.tests.utils import run_test
 
-from oriva_ai.config import Settings
-from oriva_ai.harness.memory_transport import wav_to_frames
-from oriva_ai.pipeline import build_pipeline, build_session_pipeline
-from oriva_ai.pipeline.context import interview_context
-from oriva_ai.pipeline.offline import Collector, build_offline_pipeline
+from config import Settings
+from harness.memory_transport import wav_to_frames
+from pipelines import build_pipeline, build_session_pipeline
+from pipelines.context import interview_context
+from pipelines.offline import Collector, build_offline_pipeline
 
-FIXTURE = "src/oriva_ai/harness/fixtures/short_answer.wav"
+FIXTURE = "src/harness/fixtures/short_answer.wav"
 
 
 def _mcp_disabled() -> Settings:

@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import pytest
 
-from oriva_ai.config import LLMConfig, STTConfig, TTSConfig
-from oriva_ai.pipeline.providers import (
+from config import LLMConfig, STTConfig, TTSConfig
+from pipelines.providers import (
     ProviderNotInstalled,
     UnknownProvider,
     build_llm,
     build_stt,
     build_tts,
 )
-from oriva_ai.pipeline.providers import mock as mock_mod
-from oriva_ai.pipeline.providers.mock import MockLLMService, MockSTTService, MockTTSService
+from pipelines.providers.mock import MockLLMService, MockSTTService, MockTTSService
+from pipelines.providers.mock import llm as mock_llm_mod
 
 
 def test_mock_resolves() -> None:
@@ -30,9 +30,7 @@ def test_missing_extra_becomes_provider_not_installed(monkeypatch: pytest.Monkey
         raise ModuleNotFoundError("No module named 'faster_whisper'")
 
     monkeypatch.setitem(
-        __import__(
-            "oriva_ai.pipeline.providers.registry", fromlist=["STT_PROVIDERS"]
-        ).STT_PROVIDERS,
+        __import__("pipelines.providers.registry", fromlist=["STT_PROVIDERS"]).STT_PROVIDERS,
         "whisper",
         boom,
     )
@@ -49,4 +47,4 @@ def test_mock_llm_last_user_text() -> None:
             {"role": "user", "content": "I built payment systems."},
         ]
     )
-    assert mock_mod._last_user_text(ctx) == "I built payment systems."
+    assert mock_llm_mod._last_user_text(ctx) == "I built payment systems."
