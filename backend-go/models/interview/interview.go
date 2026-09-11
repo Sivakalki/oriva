@@ -28,7 +28,29 @@ type CandRef struct {
 	Email string `json:"email"`
 }
 
-// Detail is the API projection for GET /{id} and list entries.
+// TurnScore is one scored interview turn (services/scoring). Recruiter-only:
+// only reachable via GET /interviews/{id}, which sits behind
+// RequireRole(RoleScheduler) -- the candidate's public /join/{token} status
+// uses the unrelated join.Status type and never sees this.
+type TurnScore struct {
+	TurnIndex int     `json:"turn_index"`
+	Question  string  `json:"question"`
+	Answer    string  `json:"answer"`
+	Value     float64 `json:"value"`
+	Rationale string  `json:"rationale"`
+}
+
+// ScoreSummary is the session's overall score, once computed.
+type ScoreSummary struct {
+	Value     float64   `json:"value"`
+	Rationale string    `json:"rationale"`
+	Model     string    `json:"model"`
+	ScoredAt  time.Time `json:"scored_at"`
+}
+
+// Detail is the API projection for GET /{id} and list entries. OverallScore
+// and TurnScores are only populated by Get (not List, to keep the dashboard
+// table cheap) and only once scoring has actually run -- nil/empty until then.
 type Detail struct {
 	ID          string    `json:"id"`
 	State       string    `json:"state"`
@@ -40,6 +62,9 @@ type Detail struct {
 
 	JoinToken string `json:"join_token"`
 	JoinURL   string `json:"join_url,omitempty"`
+
+	OverallScore *ScoreSummary `json:"overall_score,omitempty"`
+	TurnScores   []TurnScore   `json:"turn_scores,omitempty"`
 }
 
 // Filter is the optional set of list constraints. Empty fields are ignored.

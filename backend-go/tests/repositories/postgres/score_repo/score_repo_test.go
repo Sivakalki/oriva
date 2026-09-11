@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"oriva/backend-go/repositories/postgres"
 	"oriva/backend-go/repositories/postgres/candidate_repo"
 	"oriva/backend-go/repositories/postgres/interview_repo"
 	"oriva/backend-go/repositories/postgres/job_repo"
@@ -57,6 +58,9 @@ func TestScoreRepo_TurnScoresAndOverall(t *testing.T) {
 	has, err := sr.HasOverallScore(ctx, sid)
 	require.NoError(t, err)
 	assert.False(t, has)
+
+	_, err = sr.GetOverallScore(ctx, sid)
+	assert.ErrorIs(t, err, postgres.ErrNotFound)
 
 	require.NoError(t, sr.RecordOverallScore(ctx, sid, 75, "good overall, one weak spot", "test-model"))
 

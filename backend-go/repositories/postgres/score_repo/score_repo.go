@@ -5,8 +5,12 @@ package score_repo
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"oriva/backend-go/repositories/postgres"
+
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -99,13 +103,17 @@ type OverallScore struct {
 	CreatedAt time.Time
 }
 
-// GetOverallScore returns the session's overall score, if any.
+// GetOverallScore returns the session's overall score, or postgres.ErrNotFound
+// if it hasn't been scored yet (a normal, expected state, not a failure).
 func (r *ScoreRepo) GetOverallScore(ctx context.Context, sessionID string) (*OverallScore, error) {
 	var s OverallScore
 	err := r.pool.QueryRow(ctx, `
 		SELECT value, rationale, model, created_at FROM scores
 		WHERE session_id = $1 AND rubric_item = 'overall'`, sessionID).
 		Scan(&s.Value, &s.Rationale, &s.Model, &s.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, postgres.ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}

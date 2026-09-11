@@ -11,6 +11,7 @@ import (
 	"oriva/backend-go/models/interview"
 	"oriva/backend-go/repositories/notifications/email_repo"
 	"oriva/backend-go/repositories/postgres"
+	"oriva/backend-go/repositories/postgres/score_repo"
 	"oriva/backend-go/utils/helpers"
 
 	"go.uber.org/zap"
@@ -32,11 +33,19 @@ type candReader interface {
 	Get(ctx context.Context, orgID, id string) (*candidate.Candidate, error)
 }
 
+// scoreReader is the consumed contract for surfacing scores on GET
+// /interviews/{id} (recruiter-only route; see http/server.go).
+type scoreReader interface {
+	GetOverallScore(ctx context.Context, sessionID string) (*score_repo.OverallScore, error)
+	TurnScores(ctx context.Context, sessionID string) ([]score_repo.TurnScore, error)
+}
+
 // Service is the interviews service.
 type Service struct {
 	repo     interviewRepo
 	jobs     jobChecker
 	cands    candReader
+	scores   scoreReader
 	notifier email_repo.Sender
 	baseURL  string
 	logger   *zap.Logger
@@ -45,11 +54,11 @@ type Service struct {
 
 // NewService constructs an interviews Service.
 func NewService(
-	r interviewRepo, jobs jobChecker, cands candReader,
+	r interviewRepo, jobs jobChecker, cands candReader, scores scoreReader,
 	notifier email_repo.Sender, baseURL string, logger *zap.Logger,
 ) *Service {
 	return &Service{
-		repo: r, jobs: jobs, cands: cands, notifier: notifier,
+		repo: r, jobs: jobs, cands: cands, scores: scores, notifier: notifier,
 		baseURL: baseURL, logger: logger, now: time.Now,
 	}
 }
@@ -124,7 +133,10 @@ func (s *Service) joinURL(token string) string {
 	return s.baseURL + "/join/" + token
 }
 
-// Get returns one interview Detail or a NotFound error.
+// Get returns one interview Detail or a NotFound error. Populates
+// OverallScore/TurnScores when scoring has run (see services/scoring); a
+// load failure there is logged, not fatal -- the rest of the interview's
+// detail is still useful without its score.
 func (s *Service) Get(ctx context.Context, orgID, id string) (*interview.Detail, error) {
 	d, err := s.repo.Get(ctx, orgID, id)
 	if errors.Is(err, postgres.ErrNotFound) {
@@ -134,7 +146,32 @@ func (s *Service) Get(ctx context.Context, orgID, id string) (*interview.Detail,
 		return nil, err
 	}
 	d.JoinURL = s.joinURL(d.JoinToken)
+	s.attachScores(ctx, d)
 	return d, nil
+}
+
+func (s *Service) attachScores(ctx context.Context, d *interview.Detail) {
+	if overall, err := s.scores.GetOverallScore(ctx, d.ID); err == nil {
+		d.OverallScore = &interview.ScoreSummary{
+			Value: overall.Value, Rationale: overall.Rationale,
+			Model: overall.Model, ScoredAt: overall.CreatedAt,
+		}
+	} else if !errors.Is(err, postgres.ErrNotFound) {
+		s.logger.Warn("load overall score failed", zap.String("session_id", d.ID), zap.Error(err))
+	}
+
+	turns, err := s.scores.TurnScores(ctx, d.ID)
+	if err != nil {
+		s.logger.Warn("load turn scores failed", zap.String("session_id", d.ID), zap.Error(err))
+		return
+	}
+	d.TurnScores = make([]interview.TurnScore, len(turns))
+	for i, t := range turns {
+		d.TurnScores[i] = interview.TurnScore{
+			TurnIndex: t.TurnIndex, Question: t.Question, Answer: t.Answer,
+			Value: t.Value, Rationale: t.Rationale,
+		}
+	}
 }
 
 // List returns interview Details for the org with any filters and the join URL filled.

@@ -136,10 +136,11 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 	candRepo := candidate_repo.New(pool)
 	interviewRepo := interview_repo.New(pool)
 
+	scoreRepo := score_repo.New(pool)
 	sessionsSvc := sessions.NewService(interviewRepo, machine, logger)
 
 	judge := llmjudge.New(cfg.Judge, logger)
-	scoringSvc := scoring.NewService(score_repo.New(pool), interviewRepo, judge, sessionsSvc, logger)
+	scoringSvc := scoring.NewService(scoreRepo, interviewRepo, judge, sessionsSvc, logger)
 	sessionsSvc.SetScorer(scoringSvc)
 
 	notifier, err := email_repo.NewSender(cfg.Notify, logger)
@@ -147,7 +148,7 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 		return nil, err
 	}
 	interviewsSvc := interviews.NewService(
-		interviewRepo, jobRepo, candRepo, notifier, cfg.WebApp.BaseURL, logger)
+		interviewRepo, jobRepo, candRepo, scoreRepo, notifier, cfg.WebApp.BaseURL, logger)
 	joinSvc := join.NewService(interviewRepo, cfg.WebApp.AIWsURL)
 
 	hs := apxhttp.Handlers{

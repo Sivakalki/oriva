@@ -9,6 +9,8 @@ import (
 	"oriva/backend-go/models/candidate"
 	"oriva/backend-go/models/interview"
 	"oriva/backend-go/repositories/notifications/email_repo"
+	"oriva/backend-go/repositories/postgres"
+	"oriva/backend-go/repositories/postgres/score_repo"
 	"oriva/backend-go/services/interviews"
 
 	"github.com/stretchr/testify/assert"
@@ -62,8 +64,31 @@ func (s *spySender) Send(_ context.Context, e email_repo.Email) error {
 	return s.err
 }
 
+type fakeScores struct {
+	overall    *score_repo.OverallScore
+	overallErr error
+	turns      []score_repo.TurnScore
+	turnsErr   error
+}
+
+func (f fakeScores) GetOverallScore(context.Context, string) (*score_repo.OverallScore, error) {
+	if f.overallErr != nil {
+		return nil, f.overallErr
+	}
+	return f.overall, nil
+}
+func (f fakeScores) TurnScores(context.Context, string) ([]score_repo.TurnScore, error) {
+	return f.turns, f.turnsErr
+}
+
 func newSvc(repo *fakeRepo, job jobCheck, cand candRepo, sender email_repo.Sender) *interviews.Service {
-	return interviews.NewService(repo, job, cand, sender, "http://fe.test", zap.NewNop())
+	return newSvcWithScores(repo, job, cand, fakeScores{overallErr: postgres.ErrNotFound}, sender)
+}
+
+func newSvcWithScores(
+	repo *fakeRepo, job jobCheck, cand candRepo, scores fakeScores, sender email_repo.Sender,
+) *interviews.Service {
+	return interviews.NewService(repo, job, cand, scores, sender, "http://fe.test", zap.NewNop())
 }
 
 func kind(t *testing.T, err error) apxerrors.Kind {
@@ -134,3 +159,47 @@ func TestSchedule_Happy_SendFailureNotFatal(t *testing.T) {
 }
 
 var assertAnErr = &apxerrors.Error{Kind: apxerrors.Internal, Message: "smtp down"}
+
+func TestGet_NoScoreYet_LeavesScoreFieldsNil(t *testing.T) {
+	svc := newSvc(&fakeRepo{}, jobCheck{true}, candRepo{}, &spySender{})
+	d, err := svc.Get(context.Background(), "o1", "s1")
+	require.NoError(t, err)
+	assert.Nil(t, d.OverallScore)
+	assert.Empty(t, d.TurnScores)
+}
+
+func TestGet_AttachesOverallScoreAndTurns(t *testing.T) {
+	scoredAt := time.Now()
+	scores := fakeScores{
+		overall: &score_repo.OverallScore{
+			Value: 82, Rationale: "strong overall", Model: "qwen2.5:7b-instruct", CreatedAt: scoredAt,
+		},
+		turns: []score_repo.TurnScore{
+			{TurnIndex: 1, Question: "Q1", Answer: "A1", Value: 80, Rationale: "solid"},
+			{TurnIndex: 2, Question: "Q2", Answer: "A2", Value: 84, Rationale: "great detail"},
+		},
+	}
+	svc := newSvcWithScores(&fakeRepo{}, jobCheck{true}, candRepo{}, scores, &spySender{})
+
+	d, err := svc.Get(context.Background(), "o1", "s1")
+	require.NoError(t, err)
+	require.NotNil(t, d.OverallScore)
+	assert.Equal(t, 82.0, d.OverallScore.Value)
+	assert.Equal(t, "strong overall", d.OverallScore.Rationale)
+	assert.Equal(t, "qwen2.5:7b-instruct", d.OverallScore.Model)
+	assert.WithinDuration(t, scoredAt, d.OverallScore.ScoredAt, time.Second)
+
+	require.Len(t, d.TurnScores, 2)
+	assert.Equal(t, "Q1", d.TurnScores[0].Question)
+	assert.Equal(t, 84.0, d.TurnScores[1].Value)
+}
+
+func TestGet_ScoreLoadFailure_StillReturnsInterview(t *testing.T) {
+	scores := fakeScores{overallErr: assertAnErr, turnsErr: assertAnErr}
+	svc := newSvcWithScores(&fakeRepo{}, jobCheck{true}, candRepo{}, scores, &spySender{})
+
+	d, err := svc.Get(context.Background(), "o1", "s1")
+	require.NoError(t, err) // a scoring-load failure is logged, not fatal
+	assert.Equal(t, "s1", d.ID)
+	assert.Nil(t, d.OverallScore)
+}
