@@ -19,8 +19,16 @@ _MODEL_DIR = Path.home() / ".cache" / "oriva-ai" / "models"
 
 def whisper_stt(cfg: STTConfig) -> STTService:
     from pipecat.services.whisper.stt import WhisperSTTService
+    from pipecat.transcriptions.language import Language
 
-    return WhisperSTTService(model=cfg.model)
+    # CPU + int8: keeps the GPU free for the LLM, and faster-whisper's int8
+    # CPU path is fast enough for live use at small/base model sizes.
+    return WhisperSTTService(
+        model=cfg.model,
+        device="cpu",
+        compute_type="int8",
+        language=Language(cfg.language),
+    )
 
 
 def openai_llm(cfg: LLMConfig) -> LLMService:
