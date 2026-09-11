@@ -16,6 +16,7 @@ type Deps struct {
 	Interviews interviewReader
 	Responses  responseRecorder
 	Sessions   stateAdvancer
+	Scoring    turnScorer // optional: nil disables per-turn scoring
 	Logger     *zap.Logger
 }
 
@@ -33,7 +34,7 @@ func NewServer(d Deps) *Server {
 			". Every tool takes a session_id; the session determines the organization.",
 	})
 
-	h := &handlers{interviews: d.Interviews, responses: d.Responses, sessions: d.Sessions}
+	h := &handlers{interviews: d.Interviews, responses: d.Responses, sessions: d.Sessions, scoring: d.Scoring}
 
 	mcpsdk.AddTool(srv, &mcpsdk.Tool{
 		Name:        "get_interview_plan",

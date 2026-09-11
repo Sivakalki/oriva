@@ -29,3 +29,13 @@ app:
 notify:
   transport: "log"
   from: "interviews@oriva.dev"
+
+judge:
+  openrouter:
+    base_url: "https://openrouter.ai/api/v1"
+    api_key: ""   # set via env ORIVA__JUDGE__OPENROUTER__API_KEY (.env), never here
+    model: "openai/gpt-4o-mini"
+  ollama:
+    base_url: "http://localhost:11434/v1"
+    api_key: "ollama"
+    model: "llama3.2:3b"

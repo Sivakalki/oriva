@@ -30,6 +30,11 @@ type stateAdvancer interface {
 	Advance(ctx context.Context, orgID, sessionID, toState, reason, actor string) (*interview.Detail, error)
 }
 
+// turnScorer scores a just-recorded turn in the background (services/scoring).
+type turnScorer interface {
+	ScoreTurn(ctx context.Context, orgID, sessionID string, turnIndex int, question, answer string)
+}
+
 // --- get_interview_plan ---
 
 type PlanIn struct {
@@ -37,20 +42,13 @@ type PlanIn struct {
 }
 
 type PlanOut struct {
-	SessionID       string   `json:"session_id"`
-	State           string   `json:"state"`
-	JobTitle        string   `json:"job_title"`
-	JobDescription  string   `json:"job_description"`
-	CandidateName   string   `json:"candidate_name"`
-	CandidateResume string   `json:"candidate_resume"`
-	Questions       []string `json:"questions"`
-	SchemaVersion   string   `json:"schema_version"`
-}
-
-var cannedQuestions = []string{
-	"Walk me through a recent project you're proud of and your specific role in it.",
-	"Tell me about a technical decision you made that you'd revisit today.",
-	"Describe a time you disagreed with a teammate on an approach. How did it resolve?",
+	SessionID       string `json:"session_id"`
+	State           string `json:"state"`
+	JobTitle        string `json:"job_title"`
+	JobDescription  string `json:"job_description"`
+	CandidateName   string `json:"candidate_name"`
+	CandidateResume string `json:"candidate_resume"`
+	SchemaVersion   string `json:"schema_version"`
 }
 
 func (h *handlers) getInterviewPlan(
@@ -64,6 +62,9 @@ func (h *handlers) getInterviewPlan(
 	if err != nil {
 		return toolErr(err)
 	}
+	// No canned questions: the LLM generates every question itself, grounded
+	// in job_description and candidate_resume (see ai-service's system
+	// prompt, pipelines/context.py) -- that's what makes them dynamic.
 	return nil, PlanOut{
 		SessionID:       in.SessionID,
 		State:           p.State,
@@ -71,7 +72,6 @@ func (h *handlers) getInterviewPlan(
 		JobDescription:  p.JobDescription,
 		CandidateName:   p.CandidateName,
 		CandidateResume: p.CandidateResume,
-		Questions:       cannedQuestions,
 		SchemaVersion:   SchemaVersion,
 	}, nil
 }
@@ -128,6 +128,16 @@ func (h *handlers) recordTurn(
 	if err != nil {
 		return nil, RecordOut{}, err
 	}
+
+	if h.scoring != nil {
+		org, orgErr := h.orgOf(ctx, in.SessionID)
+		if orgErr == nil {
+			// Detached from ctx (which dies when this tool call returns) and
+			// backgrounded: scoring never adds latency to the live turn.
+			go h.scoring.ScoreTurn(context.Background(), org, in.SessionID, idx, in.Question, in.Answer)
+		}
+	}
+
 	return nil, RecordOut{Recorded: true, TurnIndex: idx}, nil
 }
 
@@ -164,6 +174,7 @@ type handlers struct {
 	interviews interviewReader
 	responses  responseRecorder
 	sessions   stateAdvancer
+	scoring    turnScorer // nil-safe: record_turn just skips the scoring hook
 }
 
 func (h *handlers) orgOf(ctx context.Context, sessionID string) (string, error) {

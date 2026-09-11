@@ -44,6 +44,16 @@ app:
 notify:
   transport: "log"
   from: "interviews@oriva.dev"
+
+judge:
+  openrouter:
+    base_url: "https://openrouter.ai/api/v1"
+    api_key: ""
+    model: "openai/gpt-4o-mini"
+  ollama:
+    base_url: "http://localhost:11434/v1"
+    api_key: "ollama"
+    model: "llama3.2:3b"
 `)
 
 type Config struct {
@@ -56,6 +66,23 @@ type Config struct {
 	Auth        Auth     `koanf:"auth"`
 	MCP         MCP      `koanf:"mcp"`
 	Notify      Notify   `koanf:"notify"`
+	Judge       Judge    `koanf:"judge"`
+}
+
+// Judge configures the LLM used to score candidate answers (services/scoring).
+// OpenRouter is the primary judge; Ollama is the local fallback used when
+// openrouter.api_key is empty (or if an OpenRouter call fails at runtime).
+// Both speak the OpenAI-compatible chat-completions API. Set the API key via
+// env: ORIVA__JUDGE__OPENROUTER__API_KEY (see .env.example), never in YAML.
+type Judge struct {
+	OpenRouter JudgeProvider `koanf:"openrouter"`
+	Ollama     JudgeProvider `koanf:"ollama"`
+}
+
+type JudgeProvider struct {
+	BaseURL string `koanf:"base_url"`
+	APIKey  string `koanf:"api_key"`
+	Model   string `koanf:"model"`
 }
 
 // WebApp holds settings about the frontend the backend needs (e.g. to build
@@ -195,6 +222,25 @@ func (c *Config) Validate() error {
 	if c.Notify.From == "" {
 		c.Notify.From = "interviews@oriva.dev"
 	}
+
+	if c.Judge.Ollama.BaseURL == "" {
+		c.Judge.Ollama.BaseURL = "http://localhost:11434/v1"
+	}
+	if c.Judge.Ollama.APIKey == "" {
+		c.Judge.Ollama.APIKey = "ollama"
+	}
+	if c.Judge.Ollama.Model == "" {
+		c.Judge.Ollama.Model = "llama3.2:3b"
+	}
+	if c.Judge.OpenRouter.BaseURL == "" {
+		c.Judge.OpenRouter.BaseURL = "https://openrouter.ai/api/v1"
+	}
+	if c.Judge.OpenRouter.Model == "" {
+		c.Judge.OpenRouter.Model = "openai/gpt-4o-mini"
+	}
+	// OpenRouter.APIKey is intentionally allowed to be empty here: that's the
+	// signal services/llmjudge uses to skip straight to the Ollama fallback,
+	// not a validation error.
 
 	if host, err := os.Hostname(); err == nil {
 		c.Logger.HostName = host

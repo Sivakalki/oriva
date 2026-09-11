@@ -146,7 +146,6 @@ func TestGetInterviewPlanTool(t *testing.T) {
 	assert.Equal(t, "Backend Eng", out.JobTitle)
 	assert.Equal(t, "Alice", out.CandidateName)
 	assert.Equal(t, mcp.SchemaVersion, out.SchemaVersion)
-	assert.Len(t, out.Questions, 3)
 }
 
 func TestRetrieveContextStub(t *testing.T) {

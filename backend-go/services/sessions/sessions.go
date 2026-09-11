@@ -9,6 +9,8 @@ import (
 	"oriva/backend-go/models/interview"
 	"oriva/backend-go/repositories/postgres"
 	"oriva/backend-go/statemachine"
+
+	"go.uber.org/zap"
 )
 
 // interviewStateRepo is the consumed store contract.
@@ -18,16 +20,33 @@ type interviewStateRepo interface {
 	Get(ctx context.Context, orgID, id string) (*interview.Detail, error)
 }
 
+// scoreTrigger kicks off overall scoring once a session enters the
+// "scoring" state. A local, consumer-defined interface (services/scoring
+// satisfies it structurally) so this package never imports services/scoring
+// -- scoring already depends on sessions (to auto-advance scoring->scored),
+// so an import the other way would cycle.
+type scoreTrigger interface {
+	ScoreOverall(ctx context.Context, orgID, sessionID string) error
+}
+
 // Service validates and applies state transitions.
 type Service struct {
 	repo    interviewStateRepo
 	machine *statemachine.Machine
+	scorer  scoreTrigger // nil until SetScorer is called; Advance skips the hook then
+	logger  *zap.Logger
 }
 
-// NewService constructs a sessions Service.
-func NewService(repo interviewStateRepo, m *statemachine.Machine) *Service {
-	return &Service{repo: repo, machine: m}
+// NewService constructs a sessions Service. Scoring is off until SetScorer
+// is called (main.go wires it once the scoring service exists, breaking
+// what would otherwise be a construction-order cycle).
+func NewService(repo interviewStateRepo, m *statemachine.Machine, logger *zap.Logger) *Service {
+	return &Service{repo: repo, machine: m, logger: logger}
 }
+
+// SetScorer wires the scoring trigger. Advance calls it (in the background)
+// whenever a session transitions into the "scoring" state.
+func (s *Service) SetScorer(scorer scoreTrigger) { s.scorer = scorer }
 
 // Graph exposes the loaded state graph for the API.
 func (s *Service) Graph() statemachine.Graph { return s.machine.Graph() }
@@ -66,6 +85,19 @@ func (s *Service) Advance(
 		return nil, apxerrors.E(apxerrors.Conflict, "session state changed concurrently; retry")
 	case err != nil:
 		return nil, err
+	}
+
+	// Entering "scoring" kicks off overall scoring in the background -- never
+	// blocks the caller (e.g. the LLM's advance_state tool call) on an LLM
+	// judge round-trip. services/scoring auto-advances scoring -> scored once
+	// it has a result.
+	if toState == "scoring" && s.scorer != nil {
+		go func() {
+			if err := s.scorer.ScoreOverall(context.Background(), orgID, sessionID); err != nil {
+				s.logger.Warn("overall scoring failed",
+					zap.String("session_id", sessionID), zap.Error(err))
+			}
+		}()
 	}
 
 	return s.repo.Get(ctx, orgID, sessionID)

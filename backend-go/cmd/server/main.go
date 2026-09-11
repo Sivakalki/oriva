@@ -5,18 +5,21 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"oriva/backend-go/config"
 	apxhttp "oriva/backend-go/http"
 	"oriva/backend-go/http/handlers"
 	orivamcp "oriva/backend-go/mcp"
+	"oriva/backend-go/repositories/llmjudge"
 	"oriva/backend-go/repositories/notifications/email_repo"
 	"oriva/backend-go/repositories/postgres"
 	"oriva/backend-go/repositories/postgres/candidate_repo"
 	"oriva/backend-go/repositories/postgres/interview_repo"
 	"oriva/backend-go/repositories/postgres/job_repo"
 	"oriva/backend-go/repositories/postgres/response_repo"
+	"oriva/backend-go/repositories/postgres/score_repo"
 	"oriva/backend-go/repositories/postgres/state_repo"
 	"oriva/backend-go/repositories/postgres/user_repo"
 	"oriva/backend-go/services/auth"
@@ -25,20 +28,33 @@ import (
 	"oriva/backend-go/services/interviews"
 	"oriva/backend-go/services/jobs"
 	"oriva/backend-go/services/join"
+	"oriva/backend-go/services/scoring"
 	"oriva/backend-go/services/sessions"
 	"oriva/backend-go/statemachine"
 	"oriva/backend-go/utils/buildinfo"
 	"oriva/backend-go/utils/jwt"
 
+	"github.com/joho/godotenv"
 	_ "github.com/jsternberg/zap-logfmt"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"go.uber.org/zap"
 )
 
+// envPrefix is the prefix for config overrides via environment variables
+// (and a .env file, loaded below). "__" separates nesting levels, mirroring
+// ai-service-python's ORIVA_AI__ convention: ORIVA__JUDGE__OPENROUTER__API_KEY
+// overrides judge.openrouter.api_key. This is how secrets (API keys) reach
+// config — never put them in a committed YAML file.
+const envPrefix = "ORIVA__"
+
 func loadConfig() (config.Config, error) {
+	// Best-effort: a .env file is optional (dev convenience); ignore if absent.
+	_ = godotenv.Load()
+
 	k := koanf.New(".")
 	if err := k.Load(rawbytes.Provider(config.DefaultConfig), yaml.Parser()); err != nil {
 		return config.Config{}, err
@@ -52,6 +68,13 @@ func loadConfig() (config.Config, error) {
 		if err := k.Load(file.Provider(path), yaml.Parser()); err != nil {
 			return config.Config{}, err
 		}
+	}
+
+	envSource := env.Provider(envPrefix, ".", func(s string) string {
+		return strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(s, envPrefix)), "__", ".")
+	})
+	if err := k.Load(envSource, nil); err != nil {
+		return config.Config{}, err
 	}
 
 	var cfg config.Config
@@ -113,7 +136,11 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 	candRepo := candidate_repo.New(pool)
 	interviewRepo := interview_repo.New(pool)
 
-	sessionsSvc := sessions.NewService(interviewRepo, machine)
+	sessionsSvc := sessions.NewService(interviewRepo, machine, logger)
+
+	judge := llmjudge.New(cfg.Judge, logger)
+	scoringSvc := scoring.NewService(score_repo.New(pool), interviewRepo, judge, sessionsSvc, logger)
+	sessionsSvc.SetScorer(scoringSvc)
 
 	notifier, err := email_repo.NewSender(cfg.Notify, logger)
 	if err != nil {
@@ -138,6 +165,7 @@ func initServer(ctx context.Context, cfg config.Config, logger *zap.Logger) (*ap
 			Interviews: interviewRepo,
 			Responses:  response_repo.New(pool),
 			Sessions:   sessionsSvc,
+			Scoring:    scoringSvc,
 			Logger:     logger,
 		})
 		hs.MCP = orivamcp.BearerAuth(cfg.MCP.AuthToken, mcpSrv.Handler())
