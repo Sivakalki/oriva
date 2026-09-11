@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from api.v1 import health, metrics
+from api.v1 import health, metrics, ws
 
 router = APIRouter()
 router.include_router(health.router)
 router.include_router(metrics.router)
+router.include_router(ws.router)

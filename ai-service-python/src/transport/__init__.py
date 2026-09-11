@@ -1,3 +1,3 @@
-from transport.websocket import register_ws_route
+from transport.websocket import build_transport
 
-__all__ = ["register_ws_route"]
+__all__ = ["build_transport"]

@@ -45,8 +45,10 @@ def test_settings_attached_to_app_state(settings: Settings) -> None:
 
 def test_ws_route_registered(settings: Settings) -> None:
     app = create_app(settings)
-    paths = {getattr(r, "path", None) for r in app.routes}
-    assert "/ws" in paths
+    # app.routes no longer flattens routes included via router.include_router
+    # (they resolve lazily); url_path_for is the stable way to check a named
+    # route is registered regardless of how deeply it's nested.
+    assert app.url_path_for("ws") == "/ws"
 
 
 def test_lifespan_builds_pipeline(settings: Settings) -> None:
@@ -72,7 +74,7 @@ def test_ws_token_closed_phase_rejected(
     async def fake_resolve(_base: str, _token: str) -> Resolved:
         return Resolved(session_id="s1", phase="closed")
 
-    monkeypatch.setattr("transport.websocket.resolve_token", fake_resolve)
+    monkeypatch.setattr("pipelines.session.resolve_token", fake_resolve)
     with TestClient(create_app(settings)) as client:
         with pytest.raises(WebSocketDisconnect) as exc:
             with client.websocket_connect("/ws?token=whatever"):
@@ -86,7 +88,7 @@ def test_ws_token_invalid_rejected(settings: Settings, monkeypatch: pytest.Monke
     async def fake_resolve(_base: str, _token: str) -> object:
         raise TokenNotFound("nope")
 
-    monkeypatch.setattr("transport.websocket.resolve_token", fake_resolve)
+    monkeypatch.setattr("pipelines.session.resolve_token", fake_resolve)
     with TestClient(create_app(settings)) as client:
         with pytest.raises(WebSocketDisconnect) as exc:
             with client.websocket_connect("/ws?token=nope"):

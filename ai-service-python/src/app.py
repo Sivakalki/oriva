@@ -1,4 +1,4 @@
-"""FastAPI app factory: wires the v1 API router and the /ws pipeline route."""
+"""FastAPI app factory: wires the v1 API router (health, metrics, /ws)."""
 
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ from api.v1.health import _VERSION
 from api.v1.routes import router as api_v1_router
 from config import Settings
 from pipelines import build_pipeline
-from transport import register_ws_route
 
 
 def create_app(settings: Settings) -> FastAPI:
@@ -38,5 +37,4 @@ def create_app(settings: Settings) -> FastAPI:
     app.state.settings = settings
 
     app.include_router(api_v1_router)
-    register_ws_route(app)
     return app
