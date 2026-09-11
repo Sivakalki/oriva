@@ -51,6 +51,12 @@ pipeline:
   # the older half of the conversation once the live LLM context passes this
   # many words, keeping the most recent turns verbatim. 0 disables.
   context_compress_words: 800
+  # Question-queue subsystem (pipelines/queue_interviewer.py): active
+  # whenever mcp.enabled is true, in place of letting the live conversational
+  # LLM decide question pacing/ordering/count itself.
+  question_count: 5
+  wrap_up_message: "That's everything I needed to ask. Thanks so much for your time today -- we'll follow up soon with next steps."
+  default_duration_minutes: 30
 
 # Python holds its own read-only connection for speculative pgvector retrieval
 # only. All writes go through the Go MCP boundary (docs/ARCHITECTURE.md 2).

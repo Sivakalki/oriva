@@ -90,6 +90,18 @@ class PipelineConfig(BaseModel):
     # the live LLM context passes this many words, it's summarized in the
     # background so it doesn't grow unbounded over a long interview. 0 disables.
     context_compress_words: int = 800
+    # Question-queue subsystem (pipelines/question_queue.py,
+    # pipelines/queue_interviewer.py): active whenever MCP is enabled, in
+    # place of letting the live conversational LLM decide pacing/ordering.
+    question_count: int = 5
+    wrap_up_message: str = (
+        "That's everything I needed to ask. Thanks so much for your time "
+        "today -- we'll follow up soon with next steps."
+    )
+    # Used only if backend-go's get_interview_plan doesn't return a
+    # duration_minutes (e.g. an older session scheduled before that field
+    # existed).
+    default_duration_minutes: int = 30
 
 
 class PostgresConfig(BaseModel):
