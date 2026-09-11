@@ -149,9 +149,9 @@ export function Call() {
           className={cn(
             "mx-auto flex size-24 items-center justify-center rounded-full border-4 transition-colors",
             state.botSpeaking
-              ? "animate-pulse border-blue-400 bg-blue-50"
+              ? "animate-pulse border-info bg-info/10"
               : state.userSpeaking
-                ? "border-emerald-400 bg-emerald-50"
+                ? "border-success bg-success/10"
                 : "border-muted bg-muted/40",
           )}
         >
@@ -166,7 +166,7 @@ export function Call() {
             <p className="text-muted-foreground">The conversation will appear here.</p>
           ) : (
             state.turns.map((t) => (
-              <div key={t.id} className={cn(t.role === "bot" ? "text-foreground" : "text-blue-700")}>
+              <div key={t.id} className={cn(t.role === "bot" ? "text-foreground" : "text-info")}>
                 <span className="mr-1 text-xs font-medium uppercase text-muted-foreground">
                   {t.role === "bot" ? "Interviewer" : "You"}
                 </span>

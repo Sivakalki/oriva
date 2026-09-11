@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom"
 import { toast } from "sonner"
 
 import { useCreateCandidate, useInterviewsByJob, useJob, useScheduleInterview } from "@/api/hooks"
+import { PageHeader } from "@/components/PageHeader"
 import { StateBadge } from "@/components/StateBadge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -75,12 +76,10 @@ export function JobDetail() {
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">{j.title}</h1>
-        {j.description && (
-          <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{j.description}</p>
-        )}
-      </div>
+      <PageHeader
+        title={j.title}
+        description={j.description ? j.description : undefined}
+      />
 
       <Card>
         <CardHeader>

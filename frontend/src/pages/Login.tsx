@@ -66,7 +66,9 @@ export function Login() {
               )}
             </div>
             {error && (
-              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </p>
             )}
             <Button type="submit" disabled={formState.isSubmitting}>
               {formState.isSubmitting ? "Signing in…" : "Sign in"}
