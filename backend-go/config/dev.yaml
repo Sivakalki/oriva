@@ -35,7 +35,13 @@ judge:
     base_url: "https://openrouter.ai/api/v1"
     api_key: ""   # set via env ORIVA__JUDGE__OPENROUTER__API_KEY (.env), never here
     model: "openai/gpt-4o-mini"
+  # A second, CPU-only Ollama instance (port 11435, GPU hidden) dedicated to
+  # judging -- keeps it off the GPU the live conversational model (port
+  # 11434) needs for real-time question generation, so per-turn scoring
+  # (which runs in parallel with the live call) never contends with it.
+  # Bigger model than the conversational one since judging isn't latency-
+  # critical: it runs in the background either way.
   ollama:
-    base_url: "http://localhost:11434/v1"
+    base_url: "http://localhost:11435/v1"
     api_key: "ollama"
-    model: "llama3.2:3b"
+    model: "qwen2.5:7b-instruct"

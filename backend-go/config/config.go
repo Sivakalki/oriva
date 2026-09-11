@@ -51,9 +51,9 @@ judge:
     api_key: ""
     model: "openai/gpt-4o-mini"
   ollama:
-    base_url: "http://localhost:11434/v1"
+    base_url: "http://localhost:11435/v1"
     api_key: "ollama"
-    model: "llama3.2:3b"
+    model: "qwen2.5:7b-instruct"
 `)
 
 type Config struct {
@@ -223,14 +223,17 @@ func (c *Config) Validate() error {
 		c.Notify.From = "interviews@oriva.dev"
 	}
 
+	// Defaults point at a second, CPU-only Ollama instance (port 11435) kept
+	// separate from the conversational model's GPU instance (port 11434) --
+	// see config/dev.yaml for why.
 	if c.Judge.Ollama.BaseURL == "" {
-		c.Judge.Ollama.BaseURL = "http://localhost:11434/v1"
+		c.Judge.Ollama.BaseURL = "http://localhost:11435/v1"
 	}
 	if c.Judge.Ollama.APIKey == "" {
 		c.Judge.Ollama.APIKey = "ollama"
 	}
 	if c.Judge.Ollama.Model == "" {
-		c.Judge.Ollama.Model = "llama3.2:3b"
+		c.Judge.Ollama.Model = "qwen2.5:7b-instruct"
 	}
 	if c.Judge.OpenRouter.BaseURL == "" {
 		c.Judge.OpenRouter.BaseURL = "https://openrouter.ai/api/v1"

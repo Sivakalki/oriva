@@ -30,6 +30,19 @@ func TestValidate_Happy(t *testing.T) {
 	assert.Equal(t, "ws://localhost:8090/ws", c.WebApp.AIWsURL)
 }
 
+func TestValidate_JudgeDefaults(t *testing.T) {
+	c := base()
+	require.NoError(t, c.Validate())
+	// Ollama defaults point at the dedicated CPU-only judge instance
+	// (port 11435), separate from the conversational model's GPU instance.
+	assert.Equal(t, "http://localhost:11435/v1", c.Judge.Ollama.BaseURL)
+	assert.Equal(t, "ollama", c.Judge.Ollama.APIKey)
+	assert.Equal(t, "qwen2.5:7b-instruct", c.Judge.Ollama.Model)
+	assert.Equal(t, "https://openrouter.ai/api/v1", c.Judge.OpenRouter.BaseURL)
+	assert.Equal(t, "openai/gpt-4o-mini", c.Judge.OpenRouter.Model)
+	assert.Empty(t, c.Judge.OpenRouter.APIKey) // not a validation error to be empty
+}
+
 func TestValidate_MCP(t *testing.T) {
 	c := base()
 	c.MCP = config.MCP{Enabled: true, AuthToken: "dev-mcp-token"}
