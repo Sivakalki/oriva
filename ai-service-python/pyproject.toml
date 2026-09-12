@@ -13,6 +13,8 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "prometheus-client>=0.20",
     "httpx>=0.27",
+    "nvidia-cublas-cu12>=12.9.2.10",
+    "nvidia-cudnn-cu12>=9.26.0.51",
 ]
 
 [project.scripts]

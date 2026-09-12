@@ -35,6 +35,37 @@ if os.environ.get("ORIVA_AI_FORCE_IPV4", "1") != "0":
 
     socket.getaddrinfo = _ipv4_only_getaddrinfo
 
+# Workaround: faster-whisper/ctranslate2's CUDA path needs libcublas.so.12
+# and libcudnn.so.9 at runtime, but pip-installed nvidia-cublas-cu12/
+# nvidia-cudnn-cu12 don't register themselves on the dynamic linker's search
+# path -- they just drop .so files under site-packages/nvidia/*/lib. Setting
+# LD_LIBRARY_PATH from *within* the running process doesn't help either:
+# glibc reads it once at process start, not per dlopen (confirmed by testing
+# directly -- exporting it before `python` starts works, mutating
+# os.environ after does not). ctypes-preloading the actual .so files with
+# RTLD_GLOBAL does work regardless of that timing, since it's the process
+# itself holding the library open rather than asking the linker to find it
+# by name later. Runs once at import time, before any CUDA code path can
+# need it; silently a no-op if the nvidia packages aren't installed (a
+# CPU-only STT config never needs this). Set ORIVA_AI_PRELOAD_CUDA_LIBS=0
+# to disable.
+if os.environ.get("ORIVA_AI_PRELOAD_CUDA_LIBS", "1") != "0":
+    try:
+        import ctypes
+        import glob
+
+        import nvidia.cublas.lib  # type: ignore[import-untyped]
+        import nvidia.cudnn.lib  # type: ignore[import-untyped]
+
+        for _pkg_path in (nvidia.cublas.lib.__path__[0], nvidia.cudnn.lib.__path__[0]):
+            for _so in sorted(glob.glob(os.path.join(_pkg_path, "*.so*"))):
+                try:
+                    ctypes.CDLL(_so, mode=ctypes.RTLD_GLOBAL)
+                except OSError:
+                    pass  # best-effort -- a real CUDA use will surface its own error
+    except ImportError:
+        pass  # nvidia-cublas-cu12/nvidia-cudnn-cu12 not installed -- CPU-only is fine
+
 DEFAULT_CONFIG_PATH = "config.yaml"
 CONFIG_PATH_ENV = "ORIVA_AI_CONFIG_FILE"
 
