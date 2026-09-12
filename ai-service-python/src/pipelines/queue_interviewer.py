@@ -8,6 +8,14 @@ candidate answer it classifies confirmed-vs-repeat-request heuristically
 (answer_classifier.py, also LLM-free) and either advances the queue (record
 the turn, pop, ask the next one) or re-asks the same question verbatim.
 
+Before the generated questions, the session runs through two fixed stages
+so the candidate never sits in silence while the question queue is being
+built: a "how are you" greeting (candidate's answer only decides which of
+two fixed reassurance lines to speak next, via a keyword heuristic -- see
+answer_classifier.classify_mood), then a self-introduction question, which
+is recorded like any other turn. Only then does the pre-generated queue
+start.
+
 Positioned in the live pipeline between the user context aggregator and the
 LLM node (see assembly.py's make_task): it intercepts every LLMContextFrame
 the aggregator emits (the candidate's answer, once their turn is detected as
@@ -19,15 +27,17 @@ from __future__ import annotations
 
 import time
 from collections import deque
-from typing import Any
+from typing import Any, Literal
 
 from loguru import logger
 from pipecat.frames.frames import EndWorkerFrame, Frame, LLMContextFrame, StartFrame, TTSSpeakFrame
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 from pipecat.services.mcp_service import MCPClient
 
-from pipelines.answer_classifier import classify_answer
+from pipelines.answer_classifier import classify_answer, classify_mood
 from pipelines.mcp_tools import call_tool
+
+_Stage = Literal["greeting", "self_intro", "main"]
 
 
 def _last_user_text(messages: list[Any]) -> str:
@@ -48,7 +58,7 @@ def _last_user_text(messages: list[Any]) -> str:
 
 
 class QueueInterviewer(FrameProcessor):
-    """Owns the question queue and drives TTS directly for one session."""
+    """Owns the greeting, self-intro, and question queue for one session."""
 
     def __init__(
         self,
@@ -57,6 +67,11 @@ class QueueInterviewer(FrameProcessor):
         *,
         duration_minutes: int,
         wrap_up_text: str,
+        candidate_name: str = "",
+        greeting_template: str = "Hi {name}, thanks for joining today! How are you doing?",
+        mood_positive_reaction: str = "That's great to hear!",
+        mood_negative_reaction: str = "I'm sorry to hear that -- no worries at all.",
+        self_intro_question: str = "Let's get started -- tell me about yourself.",
     ) -> None:
         super().__init__()
         self._mcp = mcp_client
@@ -66,22 +81,65 @@ class QueueInterviewer(FrameProcessor):
         self._deadline: float | None = None
         self._done = False
 
+        self._stage: _Stage = "greeting"
+        self._greeting_text = greeting_template.format(name=candidate_name or "there")
+        self._mood_positive = mood_positive_reaction
+        self._mood_negative = mood_negative_reaction
+        self._self_intro_question = self_intro_question
+
     async def process_frame(self, frame: Frame, direction: FrameDirection) -> None:
         await super().process_frame(frame, direction)
 
         if isinstance(frame, StartFrame):
             await self.push_frame(frame, direction)
             self._deadline = time.monotonic() + self._duration_seconds
-            await self._ask_current(direction)
+            await self.push_frame(TTSSpeakFrame(text=self._greeting_text), direction)
             return
 
         if isinstance(frame, LLMContextFrame) and not self._done:
-            # Swallowed: the candidate's answer is handled here, never
-            # forwarded to the LLM node further down the pipeline.
-            await self._handle_answer(frame, direction)
+            # Swallowed at every stage: the candidate's answer is handled
+            # here, never forwarded to the LLM node further down the pipeline.
+            if self._stage == "greeting":
+                await self._handle_greeting_answer(frame, direction)
+            elif self._stage == "self_intro":
+                await self._handle_self_intro_answer(frame, direction)
+            else:
+                await self._handle_answer(frame, direction)
             return
 
         await self.push_frame(frame, direction)
+
+    async def _handle_greeting_answer(
+        self, frame: LLMContextFrame, direction: FrameDirection
+    ) -> None:
+        answer = _last_user_text(frame.context.get_messages())
+        reaction = (
+            self._mood_positive
+            if classify_mood(answer) == "positive"
+            else self._mood_negative
+        )
+        await self.push_frame(TTSSpeakFrame(text=reaction), direction)
+        await self.push_frame(TTSSpeakFrame(text=self._self_intro_question), direction)
+        self._stage = "self_intro"
+
+    async def _handle_self_intro_answer(
+        self, frame: LLMContextFrame, direction: FrameDirection
+    ) -> None:
+        answer = _last_user_text(frame.context.get_messages())
+        if classify_answer(answer) == "repeat":
+            logger.debug("queue: re-asking self-intro, candidate asked for a repeat")
+            await self.push_frame(TTSSpeakFrame(text=self._self_intro_question), direction)
+            return
+
+        try:
+            await call_tool(
+                self._mcp, "record_turn", question=self._self_intro_question, answer=answer
+            )
+        except Exception as exc:  # noqa: BLE001 -- never block the interview on this
+            logger.warning("queue: record_turn (self-intro) failed, continuing anyway: {}", exc)
+
+        self._stage = "main"
+        await self._ask_current(direction)
 
     async def _ask_current(self, direction: FrameDirection) -> None:
         if not self._queue or self._time_up():

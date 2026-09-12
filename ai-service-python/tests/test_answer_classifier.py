@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from pipelines.answer_classifier import classify_answer
+from pipelines.answer_classifier import classify_answer, classify_mood
 
 
 @pytest.mark.parametrize(
@@ -32,3 +32,29 @@ def test_real_answers_are_confirmed(text: str) -> None:
 )
 def test_silence_and_repeat_requests_are_flagged(text: str) -> None:
     assert classify_answer(text) == "repeat"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "I'm doing great, thanks!",
+        "Pretty good, excited to be here.",
+        "Fine, thank you.",
+        "",  # empty/unclear answer defaults to positive, not negative
+    ],
+)
+def test_positive_mood_is_the_default(text: str) -> None:
+    assert classify_mood(text) == "positive"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "a bit nervous honestly",
+        "I'm not doing great today",
+        "sorry, kind of tired",
+        "stressed, to be honest",
+    ],
+)
+def test_negative_mood_needs_an_explicit_match(text: str) -> None:
+    assert classify_mood(text) == "negative"

@@ -149,6 +149,27 @@ class PipelineConfig(BaseModel):
     # pipelines/queue_interviewer.py): active whenever MCP is enabled, in
     # place of letting the live conversational LLM decide pacing/ordering.
     question_count: int = 5
+    # Spoken first, before any generated question -- "{name}" is replaced
+    # with the candidate's name from get_interview_plan (falls back to
+    # "there" if the plan has no name). Candidates otherwise heard silence
+    # while questions were being generated in the background.
+    greeting_template: str = "Hi {name}, thanks for joining today! How are you doing?"
+    # One of these two is spoken right after the candidate answers the
+    # greeting, picked by answer_classifier.classify_mood (a keyword
+    # heuristic, not an LLM call -- same reasoning as everywhere else in
+    # this file: a live judgment call this small doesn't need a model).
+    mood_positive_reaction: str = "That's great to hear!"
+    mood_negative_reaction: str = (
+        "I'm sorry to hear that -- no worries at all, let's just take it easy "
+        "and get you comfortable."
+    )
+    # Asked once, right after the mood reaction, before the generated
+    # question queue starts. Recorded via record_turn like any other
+    # question, using classify_answer's normal confirmed/repeat handling.
+    self_intro_question: str = (
+        "Let's get started. Could you tell me a little bit about yourself "
+        "and your background?"
+    )
     wrap_up_message: str = (
         "That's everything I needed to ask. Thanks so much for your time "
         "today -- we'll follow up soon with next steps."

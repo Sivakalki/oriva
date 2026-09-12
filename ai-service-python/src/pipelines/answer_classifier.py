@@ -56,3 +56,38 @@ def classify_answer(text: str) -> Classification:
     if any(phrase in normalized for phrase in _REPEAT_PHRASES):
         return "repeat"
     return "confirmed"
+
+
+Mood = Literal["positive", "negative"]
+
+# Substring match, same philosophy as _REPEAT_PHRASES above: cheap and
+# deterministic beats another live model call for a decision this small.
+# Used only to pick which of two fixed reassurance lines to speak after the
+# opening "how are you" small talk -- never for anything scored.
+_NEGATIVE_MOOD_PHRASES: tuple[str, ...] = (
+    "not good",
+    "not great",
+    "not well",
+    "not doing great",
+    "not doing good",
+    "not doing well",
+    "nervous",
+    "anxious",
+    "stressed",
+    "worried",
+    "tired",
+    "sorry",
+    "bad day",
+    "not doing well",
+    "a bit off",
+    "okay i guess",
+    "ok i guess",
+)
+
+
+def classify_mood(text: str) -> Mood:
+    """Positive by default -- a negative match must be explicit."""
+    normalized = _WHITESPACE_RE.sub(" ", text.strip().lower())
+    if any(phrase in normalized for phrase in _NEGATIVE_MOOD_PHRASES):
+        return "negative"
+    return "positive"

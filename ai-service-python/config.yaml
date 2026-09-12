@@ -69,6 +69,13 @@ pipeline:
   # whenever mcp.enabled is true, in place of letting the live conversational
   # LLM decide question pacing/ordering/count itself.
   question_count: 5
+  # Spoken before any generated question, so the candidate never sits in
+  # silence while questions are being generated in the background.
+  # "{name}" comes from get_interview_plan (falls back to "there").
+  greeting_template: "Hi {name}, thanks for joining today! How are you doing?"
+  mood_positive_reaction: "That's great to hear!"
+  mood_negative_reaction: "I'm sorry to hear that -- no worries at all, let's just take it easy and get you comfortable."
+  self_intro_question: "Let's get started. Could you tell me a little bit about yourself and your background?"
   wrap_up_message: "That's everything I needed to ask. Thanks so much for your time today -- we'll follow up soon with next steps."
   default_duration_minutes: 30
 

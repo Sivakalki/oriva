@@ -144,5 +144,10 @@ async def build_session_pipeline(settings: Settings, session_id: str) -> Pipelin
         questions,
         duration_minutes=plan.get("duration_minutes") or settings.pipeline.default_duration_minutes,
         wrap_up_text=settings.pipeline.wrap_up_message,
+        candidate_name=plan.get("candidate_name") or "",
+        greeting_template=settings.pipeline.greeting_template,
+        mood_positive_reaction=settings.pipeline.mood_positive_reaction,
+        mood_negative_reaction=settings.pipeline.mood_negative_reaction,
+        self_intro_question=settings.pipeline.self_intro_question,
     )
     return build
