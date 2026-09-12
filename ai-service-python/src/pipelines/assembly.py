@@ -24,6 +24,7 @@ from pipelines.mcp_tools import build_mcp_client, call_tool, load_tools
 from pipelines.providers import build_llm, build_stt, build_tts
 from pipelines.question_queue import generate_questions
 from pipelines.queue_interviewer import QueueInterviewer
+from pipelines.wire_compat import WebsocketClientCompatFilter
 from telemetry.observer import MetricsObserver
 
 
@@ -61,6 +62,10 @@ class PipelineBuild:
         stages.extend(
             [
                 self.tts,
+                # See wire_compat.py: the websocket-transport client can't
+                # deserialize InterruptionFrame/TextFrame/TranscriptionFrame --
+                # drop them here so a barge-in never crashes the connection.
+                WebsocketClientCompatFilter(),
                 transport.output(),
                 aggregators.assistant(),
                 # After the assistant's reply is committed to context: check
