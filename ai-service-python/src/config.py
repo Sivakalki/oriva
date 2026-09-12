@@ -64,8 +64,23 @@ class TransportConfig(BaseModel):
 
 class STTConfig(BaseModel):
     provider: str = "mock"
-    model: str = "base.en"
+    # distil-medium.en: close to medium-tier accuracy at close to small-tier
+    # speed -- a real step up from base.en, still light enough to share a
+    # 4GB GPU with the LLM (see device/compute_type below).
+    model: str = "distil-medium.en"
     language: str = "en"
+    # "auto" tries CUDA first, falls back to CPU if unavailable -- never
+    # crash-loops just because the GPU is busy or absent. See
+    # pipelines/providers/whisper/stt.py for how this is resolved: CTranslate2
+    # compute types are NOT interchangeable between devices (e.g.
+    # "int8_float16" errors outright on CPU), so the CPU fallback always
+    # forces plain "int8" regardless of the value below.
+    device: str = "auto"
+    # Compute type used only on the CUDA path (ignored on CPU -- see above).
+    # int8_float16: quantized weights + fp16 compute, roughly half the VRAM
+    # of plain float16 -- meaningfully more accurate than CPU-only int8
+    # thanks to GPU compute, without risking the whole 4GB card on one model.
+    compute_type: str = "int8_float16"
     mock_transcript: str = "I have about five years of backend experience."
 
 

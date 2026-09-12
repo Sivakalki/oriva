@@ -28,7 +28,15 @@ transport:
 # pointed at a local Ollama server, tts.provider=piper — see commit history).
 stt:
   provider: mock
-  model: base.en
+  # distil-medium.en: close to medium-tier accuracy at close to small-tier
+  # speed. device: auto tries CUDA first (falls back to CPU if unavailable);
+  # compute_type only applies on the CUDA path (CPU always forces plain
+  # int8 -- see pipelines/providers/whisper/stt.py). Measured on this repo's
+  # dev machine (RTX 3050 Ti, 4GB): distil-medium.en int8_float16 on CUDA
+  # uses ~600MB VRAM, leaving room for the LLM's brief per-call load.
+  model: distil-medium.en
+  device: auto
+  compute_type: int8_float16
   language: en
   mock_transcript: "I have about five years of backend experience."
 
