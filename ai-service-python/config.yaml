@@ -58,13 +58,10 @@ pipeline:
   wrap_up_message: "That's everything I needed to ask. Thanks so much for your time today -- we'll follow up soon with next steps."
   default_duration_minutes: 30
 
-# Python holds its own read-only connection for speculative pgvector retrieval
-# only. All writes go through the Go MCP boundary (docs/ARCHITECTURE.md 2).
-postgres:
-  dsn: postgresql://oriva:oriva@localhost:5432/oriva
-  readonly: true
-
 # Go implements the MCP server; this is where Pipecat's MCPClient connects.
+# Job description and resume are fetched directly (get_interview_plan), in
+# full, and used as-is -- no retrieval/pgvector layer (both are short text,
+# not a corpus worth indexing; see docs/ARCHITECTURE.md).
 mcp:
   server_url: http://localhost:8080/mcp
   enabled: true

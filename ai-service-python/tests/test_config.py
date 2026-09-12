@@ -15,7 +15,6 @@ def test_defaults() -> None:
     assert s.stt.provider == "mock"
     assert s.llm.base_url == "http://localhost:4000"
     assert s.pipeline.sample_rate == 16000
-    assert s.postgres.readonly is True
 
 
 def test_yaml_overrides_nested_value(tmp_path: Path) -> None:

@@ -51,7 +51,6 @@ class _FakeClient:
 def test_session_tools_match_go_surface() -> None:
     assert SESSION_TOOLS == (
         "get_interview_plan",
-        "retrieve_context",
         "record_turn",
         "advance_state",
     )

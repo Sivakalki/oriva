@@ -26,7 +26,7 @@ type Server struct {
 	logger *zap.Logger
 }
 
-// NewServer builds the MCP server and registers the four tools.
+// NewServer builds the MCP server and registers the three tools.
 func NewServer(d Deps) *Server {
 	impl := &mcpsdk.Implementation{Name: "oriva-backend", Version: buildinfo.Version}
 	srv := mcpsdk.NewServer(impl, &mcpsdk.ServerOptions{
@@ -40,11 +40,6 @@ func NewServer(d Deps) *Server {
 		Name:        "get_interview_plan",
 		Description: "Return the job, resume, current state and opening questions for a session.",
 	}, h.getInterviewPlan)
-
-	mcpsdk.AddTool(srv, &mcpsdk.Tool{
-		Name:        "retrieve_context",
-		Description: "Retrieve resume/JD passages relevant to a query (not yet implemented).",
-	}, h.retrieveContext)
 
 	mcpsdk.AddTool(srv, &mcpsdk.Tool{
 		Name:        "record_turn",

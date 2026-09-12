@@ -26,7 +26,7 @@ POST  /api/v1/interviews/{id}/advance   {to_state, reason?}   # session state tr
 GET   /api/v1/session-states                                  # the state graph
 
 # MCP tool boundary (Streamable HTTP, static bearer token, root path)
-POST  /mcp    # oriva.tools.v1: get_interview_plan, retrieve_context, record_turn, advance_state
+POST  /mcp    # oriva.tools.v1: get_interview_plan, record_turn, advance_state
 ```
 
 ## Quick start

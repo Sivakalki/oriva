@@ -78,31 +78,6 @@ func (h *handlers) getInterviewPlan(
 	}, nil
 }
 
-// --- retrieve_context (stub) ---
-
-type RetrieveIn struct {
-	SessionID string `json:"session_id"`
-	Query     string `json:"query" jsonschema:"what to search the resume/JD for"`
-	K         int    `json:"k,omitempty" jsonschema:"max chunks to return (default 5)"`
-}
-
-type RetrieveOut struct {
-	Chunks []string `json:"chunks"`
-	Note   string   `json:"note"`
-}
-
-func (h *handlers) retrieveContext(
-	ctx context.Context, _ *mcpsdk.CallToolRequest, in RetrieveIn,
-) (*mcpsdk.CallToolResult, RetrieveOut, error) {
-	if _, err := h.orgOf(ctx, in.SessionID); err != nil {
-		return toolErrRetrieve(err)
-	}
-	return nil, RetrieveOut{
-		Chunks: []string{},
-		Note:   "pgvector retrieval is not implemented in this slice",
-	}, nil
-}
-
 // --- record_turn ---
 
 type RecordIn struct {
@@ -192,9 +167,6 @@ func (h *handlers) orgOf(ctx context.Context, sessionID string) (string, error) 
 
 func toolErr(err error) (*mcpsdk.CallToolResult, PlanOut, error) {
 	return nil, PlanOut{}, err
-}
-func toolErrRetrieve(err error) (*mcpsdk.CallToolResult, RetrieveOut, error) {
-	return nil, RetrieveOut{}, err
 }
 func toolErrRecord(err error) (*mcpsdk.CallToolResult, RecordOut, error) {
 	return nil, RecordOut{}, err

@@ -114,9 +114,11 @@ testable independently:
   higher-quality/slower) model than the live conversational one.
 - ⬜ Guardrails so the AI only answers candidate questions from approved content
   (prompt-injection resistance for the live conversation).
-- ⬜ `retrieve_context` real implementation: pgvector embedding columns, an
-  embedding step, similarity search (Go side; Python also holds its own
-  read-only path per ARCHITECTURE §2).
+- ✅ `retrieve_context`/pgvector: dropped, not built. Job description and
+  resume are short text, already fetched in full via `get_interview_plan`
+  and used as-is — no corpus to search, so no retrieval layer earns its
+  complexity here. The stub tool has been removed from the MCP surface
+  entirely (both the Go server and the Python client's tool list).
 - ⬜ Candidate join flow: candidate `users` provisioning + magic-link / invite
   token + the email that carries it.
 

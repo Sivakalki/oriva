@@ -99,10 +99,10 @@ func TestListTools(t *testing.T) {
 		names[tool.Name] = true
 		assert.NotNil(t, tool.InputSchema)
 	}
-	for _, want := range []string{"get_interview_plan", "retrieve_context", "record_turn", "advance_state"} {
+	for _, want := range []string{"get_interview_plan", "record_turn", "advance_state"} {
 		assert.True(t, names[want], "missing tool %s", want)
 	}
-	assert.Len(t, res.Tools, 4)
+	assert.Len(t, res.Tools, 3)
 }
 
 func TestAdvanceStateTool(t *testing.T) {
@@ -146,14 +146,6 @@ func TestGetInterviewPlanTool(t *testing.T) {
 	assert.Equal(t, "Backend Eng", out.JobTitle)
 	assert.Equal(t, "Alice", out.CandidateName)
 	assert.Equal(t, mcp.SchemaVersion, out.SchemaVersion)
-}
-
-func TestRetrieveContextStub(t *testing.T) {
-	cs := connect(t, mcp.Deps{Interviews: fakeInterviews{org: "o1"}, Responses: &fakeResponses{}, Sessions: &fakeSessions{}})
-	var out mcp.RetrieveOut
-	call(t, cs, "retrieve_context", map[string]any{"session_id": "s1", "query": "kafka"}, &out)
-	assert.Empty(t, out.Chunks)
-	assert.NotEmpty(t, out.Note)
 }
 
 func TestUnknownSessionIsToolError(t *testing.T) {

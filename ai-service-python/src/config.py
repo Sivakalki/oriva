@@ -104,11 +104,6 @@ class PipelineConfig(BaseModel):
     default_duration_minutes: int = 30
 
 
-class PostgresConfig(BaseModel):
-    dsn: str = "postgresql://oriva:oriva@localhost:5432/oriva"
-    readonly: bool = True
-
-
 class MCPConfig(BaseModel):
     server_url: str = "http://localhost:8080/mcp"
     enabled: bool = True
@@ -134,7 +129,6 @@ class Settings(BaseSettings):
     llm: LLMConfig = Field(default_factory=LLMConfig)
     tts: TTSConfig = Field(default_factory=TTSConfig)
     pipeline: PipelineConfig = Field(default_factory=PipelineConfig)
-    postgres: PostgresConfig = Field(default_factory=PostgresConfig)
     mcp: MCPConfig = Field(default_factory=MCPConfig)
     backend: BackendConfig = Field(default_factory=BackendConfig)
     metrics_enabled: bool = True

@@ -20,7 +20,6 @@ from config import MCPConfig
 # The tool surface exposed by backend-go (mcp/server.go).
 SESSION_TOOLS: tuple[str, ...] = (
     "get_interview_plan",
-    "retrieve_context",
     "record_turn",
     "advance_state",
 )
