@@ -16,6 +16,10 @@ from pipecat.services.mcp_service import MCPClient
 from pipecat.services.stt_service import STTService
 from pipecat.services.tts_service import TTSService
 from pipecat.transports.base_transport import BaseTransport
+from pipecat.turns.user_stop.speech_timeout_user_turn_stop_strategy import (
+    SpeechTimeoutUserTurnStopStrategy,
+)
+from pipecat.turns.user_turn_strategies import UserTurnStrategies
 
 from config import Settings
 from pipelines.context import interview_context
@@ -45,7 +49,18 @@ class PipelineBuild:
     queue_interviewer: QueueInterviewer | None = None
 
     def make_task(self, transport: BaseTransport) -> PipelineTask:
-        user_params = LLMUserAggregatorParams()
+        # Plain silence-timeout turn-stop, not Pipecat's own default (a local
+        # ML "does this sound complete" model) -- see PipelineConfig.
+        # speech_timeout_secs's docstring for why.
+        user_params = LLMUserAggregatorParams(
+            user_turn_strategies=UserTurnStrategies(
+                stop=[
+                    SpeechTimeoutUserTurnStopStrategy(
+                        user_speech_timeout=self.settings.pipeline.speech_timeout_secs
+                    )
+                ]
+            )
+        )
         if self.settings.pipeline.vad == "silero":
             from pipecat.audio.vad.silero import SileroVADAnalyzer
 

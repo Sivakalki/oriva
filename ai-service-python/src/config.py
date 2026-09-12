@@ -132,6 +132,15 @@ class PipelineConfig(BaseModel):
     greeting: str = "Hi, thanks for joining. Let's begin when you're ready."
     sample_rate: int = 16000
     vad: Literal["silero", "none"] = "silero"
+    # How long the candidate must stay silent (after VAD detects a pause)
+    # before their turn is considered over. Deliberately a plain timeout,
+    # not Pipecat's own default (a local ML "does this sound complete"
+    # model, LocalSmartTurnAnalyzerV3) -- confirmed live that model cuts
+    # candidates off mid-sentence on ordinary conversational pauses. Same
+    # philosophy as the rest of this pipeline (question_queue.py,
+    # answer_classifier.py): a small local model's semantic judgment proved
+    # unreliable here, so replace it with something deterministic instead.
+    speech_timeout_secs: float = 1.2
     # Background context compaction (pipelines/context_compactor.py): once
     # the live LLM context passes this many words, it's summarized in the
     # background so it doesn't grow unbounded over a long interview. 0 disables.
